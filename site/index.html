@@ -54,6 +54,8 @@
             <span class="tsel" id="arrFrom" data-label="抵達時間從"></span> 到 <span class="tsel" id="arrTo" data-label="抵達時間到"></span>
           </fieldset>
           <button type="button" id="clearTimes">清除時間</button>
+          <button type="button" id="nearestBtn">📍 依離我最近的上車點排序</button>
+          <span id="nearestStatus" class="muted"></span>
           <label>排序
             <select id="sort">
               <option value="rating">評分（高到低）</option>
@@ -61,6 +63,7 @@
               <option value="first">最早發車</option>
               <option value="count">班次數（多到少）</option>
               <option value="duration">路途時間（短到長）</option>
+              <option value="nearest">離我最近的上車點</option>
             </select>
           </label>
         </div>
