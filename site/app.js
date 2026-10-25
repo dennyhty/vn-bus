@@ -78,13 +78,20 @@
   }
 
   // ---------- pickers ----------
+  // Route slugs are "<district> <province>" (e.g. "Van Lam Hung Yen"). Show them like Vexere does: "Van Lam - Hung Yen".
+  const PROVINCES = ("An Giang,Ba Ria Vung Tau,Bac Giang,Bac Kan,Bac Lieu,Bac Ninh,Ben Tre,Binh Dinh,Binh Duong,Binh Phuoc,Binh Thuan,Ca Mau,Can Tho,Cao Bang,Da Nang,Dak Lak,Dak Nong,Dien Bien,Dong Nai,Dong Thap,Gia Lai,Ha Giang,Ha Nam,Ha Noi,Ha Tinh,Hai Duong,Hai Phong,Hau Giang,Hoa Binh,Hung Yen,Khanh Hoa,Kien Giang,Kon Tum,Lai Chau,Lam Dong,Lang Son,Lao Cai,Long An,Nam Dinh,Nghe An,Ninh Binh,Ninh Thuan,Phu Tho,Phu Yen,Quang Binh,Quang Nam,Quang Ngai,Quang Ninh,Quang Tri,Soc Trang,Son La,Tay Ninh,Thai Binh,Thai Nguyen,Thanh Hoa,Thua Thien Hue,Tien Giang,Tra Vinh,Tuyen Quang,Vinh Long,Vinh Phuc,Yen Bai,Sai Gon").split(",");
+  const prettyName = (n) => {
+    const hit = PROVINCES.filter((p) => n.endsWith(" " + p)).sort((a, b) => b.length - a.length)[0];
+    return hit ? `${n.slice(0, -hit.length - 1)} - ${hit}` : n;
+  };
+
   async function loadDestinations(originName) {
     const o = origins.find((x) => x.name.toLowerCase() === originName.trim().toLowerCase());
     destinations = [];
     $("toList").innerHTML = "";
     if (!o) return;
     const res = await fetch(`routes/${o.file}.json`);
-    destinations = await res.json();
+    destinations = (await res.json()).map(([n, path]) => [prettyName(n), path]);
     $("toList").innerHTML = destinations.map(([n]) => `<option value="${esc(n)}">`).join("");
   }
 
@@ -436,8 +443,8 @@
   fetch("routes/index.json")
     .then((r) => r.json())
     .then(async (list) => {
-      origins = list;
-      $("fromList").innerHTML = list.map((o) => `<option value="${esc(o.name)}">`).join("");
+      origins = list.map((o) => ({ ...o, name: prettyName(o.name) }));
+      $("fromList").innerHTML = origins.map((o) => `<option value="${esc(o.name)}">`).join("");
       if (params.get("from")) {
         $("from").value = params.get("from");
         await loadDestinations(params.get("from"));
