@@ -41,11 +41,6 @@
         </div>
       </div>
 
-      <div class="tabs" role="tablist">
-        <button role="tab" data-tab="operators" aria-selected="true">車行與時刻</button>
-        <button role="tab" data-tab="map" aria-selected="false">上下車點地圖</button>
-      </div>
-
       <div id="tab-operators">
         <div class="toolbar">
           <fieldset class="range">
@@ -70,7 +65,8 @@
         <p class="note muted">發車時間是各車行平常每天的班次，票價是區間，實際以 Vexere 當天顯示為準。抵達時間是用該車行範例班次的車程（沒有的話用整條路線的平均車程）加上發車時間推算的，只供參考，跨過午夜的時間範圍也可以用（例如 22:00 到 05:00）。</p>
       </div>
 
-      <div id="tab-map" hidden>
+      <div id="mapSection">
+        <h3>上下車點地圖</h3>
         <p class="note muted">Vexere 的公開頁只提供上下車點的地址，沒有座標。地圖上的位置是用地址換算出來的，可能有誤差，請以 Vexere 與車行為準。每個點旁邊的「Google 地圖」連結會直接用地址在 Google 地圖搜尋，通常比較準，也可以導航。</p>
         <div class="toolbar">
           <button type="button" id="locate">📍 找離我最近的點</button>

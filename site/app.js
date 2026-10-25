@@ -152,7 +152,7 @@
     if (!$("liveDate").value) $("liveDate").value = vietnamToday();
     updateLiveLink();
     renderOperators();
-    if (!$("tab-map").hidden) renderMap();
+    renderMap();
   }
 
   function updateLiveLink() {
@@ -272,7 +272,7 @@
         const pos = await locatePoint(p);
         done++;
         if (pos) geoPoints.push({ ...pos, kind, op: op.name, opId: op.id, label: p.address || p.fullAddress, addr: p.fullAddress });
-        if (!$("tab-map").hidden) renderMap(true);
+        renderMap(true);
       }
     }
     $("mapStatus").textContent = "";
@@ -368,13 +368,6 @@
     );
   }
 
-  function switchTab(name) {
-    document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
-    $("tab-operators").hidden = name !== "operators";
-    $("tab-map").hidden = name !== "map";
-    if (name === "map" && current) renderMap();
-  }
-
   // ---------- time pickers (hour + quarter-hour selects; native pickers can't limit minutes) ----------
   const HOURS = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0"));
   const QUARTERS = ["00", "15", "30", "45"];
@@ -416,7 +409,6 @@
     if (current) renderOperators();
   });
   $("liveDate").addEventListener("change", updateLiveLink);
-  document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
   $("locate").addEventListener("click", locate);
   $("operators").addEventListener("click", (e) => {
     const btn = e.target.closest(".map-btn");
@@ -427,8 +419,9 @@
       for (let i = geoPoints.length - 1; i >= 0; i--) if (geoPoints[i].opId === op.id) geoPoints.splice(i, 1);
       btn.textContent = "📍 顯示在地圖";
     } else {
-      btn.textContent = "✓ 已在地圖上（到「上下車點地圖」查看）";
+      btn.textContent = "✓ 已在地圖上";
       addOperatorToMap(op);
+      $("mapSection").scrollIntoView({ behavior: "smooth", block: "start" });
     }
   });
   $("pointList").addEventListener("click", (e) => {
@@ -446,10 +439,10 @@
       origins = list.map((o) => ({ ...o, name: prettyName(o.name) }));
       $("fromList").innerHTML = origins.map((o) => `<option value="${esc(o.name)}">`).join("");
       if (params.get("from")) {
-        $("from").value = params.get("from");
-        await loadDestinations(params.get("from"));
+        $("from").value = prettyName(params.get("from"));
+        await loadDestinations($("from").value);
         if (params.get("to")) {
-          $("to").value = params.get("to");
+          $("to").value = prettyName(params.get("to"));
           if (selectedPath()) search();
         }
       }
