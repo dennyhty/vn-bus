@@ -41,11 +41,32 @@
     return 12742 * Math.asin(Math.sqrt(h));
   }
   const fmtKm = (d) => (d < 1 ? `${Math.round(d * 1000)} 公尺` : `${d.toFixed(1)} 公里`);
-  const hour = (t) => Number(t.split(":")[0]);
-  const inPeriod = (t, p) => {
-    const h = hour(t);
-    return { morning: h >= 5 && h < 12, afternoon: h >= 12 && h < 18, evening: h >= 18 && h < 22, night: h >= 22 || h < 5 }[p];
+  const toMin = (t) => {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
   };
+  const fmtMin = (m) => {
+    const x = ((Math.round(m) % 1440) + 1440) % 1440;
+    return `${String(Math.floor(x / 60)).padStart(2, "0")}:${String(x % 60).padStart(2, "0")}`;
+  };
+  // Empty bounds mean "no limit"; from > to wraps past midnight (22:00 to 05:00).
+  const inRange = (min, from, to) => {
+    if (!from && !to) return true;
+    if (from && !to) return min >= toMin(from);
+    if (!from && to) return min <= toMin(to);
+    const a = toMin(from);
+    const b = toMin(to);
+    return a <= b ? min >= a && min <= b : min >= a || min <= b;
+  };
+  // Trip length in minutes: the operator's sample trip if it has one, else the route average.
+  function tripMinutes(op) {
+    const s = op.sample;
+    if (s?.date && s?.arriveAt) {
+      const d = (Date.parse(s.arriveAt) - Date.parse(s.date)) / 60000;
+      if (d > 0 && d < 48 * 60) return d;
+    }
+    return current?.durationHours ? current.durationHours * 60 : null;
+  }
   const vietnamToday = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
 
   function setStatus(text, isError) {
@@ -136,19 +157,29 @@
   }
 
   function renderOperators() {
-    const period = $("period").value;
-    let ops = current.operators.map((o) => ({ ...o, shown: period ? o.times.filter((t) => inPeriod(t, period)) : o.times }));
-    if (period) ops = ops.filter((o) => o.shown.length);
+    const depFrom = $("depFrom").value;
+    const depTo = $("depTo").value;
+    const arrFrom = $("arrFrom").value;
+    const arrTo = $("arrTo").value;
+    const filtering = depFrom || depTo || arrFrom || arrTo;
+    let ops = current.operators.map((o) => {
+      const dur = tripMinutes(o);
+      const shown = o.times
+        .map((t) => ({ dep: t, arr: dur == null ? null : fmtMin(toMin(t) + dur) }))
+        .filter(({ dep, arr }) => inRange(toMin(dep), depFrom, depTo) && ((!arrFrom && !arrTo) || (arr != null && inRange(toMin(arr), arrFrom, arrTo))));
+      return { ...o, shown };
+    });
+    if (filtering) ops = ops.filter((o) => o.shown.length);
     const sorters = {
       rating: (a, b) => (b.rating || 0) - (a.rating || 0) || b.ratingCount - a.ratingCount,
       fare: (a, b) => (a.fareMin ?? 1e12) - (b.fareMin ?? 1e12),
-      first: (a, b) => (a.shown[0] || "99").localeCompare(b.shown[0] || "99"),
+      first: (a, b) => (a.shown[0]?.dep || "99").localeCompare(b.shown[0]?.dep || "99"),
       count: (a, b) => b.shown.length - a.shown.length,
     };
     ops.sort(sorters[$("sort").value]);
 
     if (!ops.length) {
-      $("operators").innerHTML = `<li class="trip muted">這個時段沒有車行發車。</li>`;
+      $("operators").innerHTML = `<li class="trip muted">沒有符合這個時間範圍的班次。可以放寬或清除時間。</li>`;
       return;
     }
     $("operators").innerHTML = ops
@@ -168,7 +199,7 @@
             <div class="fare">${fare}</div>
           </div>
           <div class="meta">${o.rating ? `★ ${o.rating}（${o.ratingCount}）` : "尚無評分"} · 每天 ${o.times.length} 班</div>
-          <div class="chips">${o.shown.map((t) => `<span class="chip">${esc(t)}</span>`).join("")}</div>
+          <div class="chips">${o.shown.map(({ dep, arr }) => `<span class="chip" title="抵達時間為推算">${esc(dep)}${arr ? ` <span class="arr">→ ~${esc(arr)}</span>` : ""}</span>`).join("")}</div>
           <details class="op-details">
             <summary>上下車點與範例班次</summary>
             <b>上車點</b><ul class="addr">${addrList(o.pickupPoints)}</ul>
@@ -349,7 +380,11 @@
     $("to").value = f;
     setStatus(destinations.some(([n]) => n.toLowerCase() === f.trim().toLowerCase()) ? "" : `Vexere 沒有 ${t} → ${f} 這條路線。`, !destinations.some(([n]) => n.toLowerCase() === f.trim().toLowerCase()));
   });
-  ["period", "sort"].forEach((id) => $(id).addEventListener("change", () => current && renderOperators()));
+  ["depFrom", "depTo", "arrFrom", "arrTo", "sort"].forEach((id) => $(id).addEventListener("change", () => current && renderOperators()));
+  $("clearTimes").addEventListener("click", () => {
+    ["depFrom", "depTo", "arrFrom", "arrTo"].forEach((id) => ($(id).value = ""));
+    if (current) renderOperators();
+  });
   $("liveDate").addEventListener("change", updateLiveLink);
   document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
   $("locate").addEventListener("click", locate);
