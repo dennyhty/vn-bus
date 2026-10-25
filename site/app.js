@@ -365,6 +365,26 @@
     if (name === "map" && current) renderMap();
   }
 
+  // ---------- time pickers (hour + quarter-hour selects; native pickers can't limit minutes) ----------
+  const HOURS = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0"));
+  const QUARTERS = ["00", "15", "30", "45"];
+  function buildTimePicker(el) {
+    const opts = (list, blank) => (blank ? `<option value="">--</option>` : "") + list.map((v) => `<option>${v}</option>`).join("");
+    el.innerHTML = `<select class="th" aria-label="${esc(el.dataset.label)}（時）">${opts(HOURS, true)}</select>:<select class="tm" aria-label="${esc(el.dataset.label)}（分）">${opts(QUARTERS)}</select>`;
+    const h = el.querySelector(".th");
+    const m = el.querySelector(".tm");
+    // Behaves like <input type="time">: "HH:MM" or "" when no hour is chosen.
+    Object.defineProperty(el, "value", {
+      get: () => (h.value ? `${h.value}:${m.value}` : ""),
+      set: (v) => {
+        const [hh, mm] = v ? v.split(":") : ["", "00"];
+        h.value = hh;
+        m.value = QUARTERS.includes(mm) ? mm : "00";
+      },
+    });
+  }
+  document.querySelectorAll(".tsel").forEach(buildTimePicker);
+
   // ---------- wiring ----------
   $("search").addEventListener("submit", search);
   $("from").addEventListener("change", () => {
