@@ -48,15 +48,15 @@
 
       <div id="tab-operators">
         <div class="toolbar">
-          <label>出發時段
-            <select id="period">
-              <option value="">全部</option>
-              <option value="morning">早上 05–12</option>
-              <option value="afternoon">下午 12–18</option>
-              <option value="evening">晚上 18–22</option>
-              <option value="night">夜間 22–05</option>
-            </select>
-          </label>
+          <fieldset class="range">
+            <legend>出發時間</legend>
+            <input type="time" id="depFrom" aria-label="出發時間從"> 到 <input type="time" id="depTo" aria-label="出發時間到">
+          </fieldset>
+          <fieldset class="range">
+            <legend>抵達（下車）時間，推算</legend>
+            <input type="time" id="arrFrom" aria-label="抵達時間從"> 到 <input type="time" id="arrTo" aria-label="抵達時間到">
+          </fieldset>
+          <button type="button" id="clearTimes">清除時間</button>
           <label>排序
             <select id="sort">
               <option value="rating">評分（高到低）</option>
@@ -67,7 +67,7 @@
           </label>
         </div>
         <ul id="operators" class="trips"></ul>
-        <p class="note muted">發車時間是各車行平常每天的班次，票價是區間，實際以 Vexere 當天顯示為準。</p>
+        <p class="note muted">發車時間是各車行平常每天的班次，票價是區間，實際以 Vexere 當天顯示為準。抵達時間是用該車行範例班次的車程（沒有的話用整條路線的平均車程）加上發車時間推算的，只供參考，跨過午夜的時間範圍也可以用（例如 22:00 到 05:00）。</p>
       </div>
 
       <div id="tab-map" hidden>
