@@ -80,6 +80,28 @@
   // ---------- pickers ----------
   // Route slugs are "<district> <province>" (e.g. "Van Lam Hung Yen"). Show them like Vexere does: "Van Lam - Hung Yen".
   const PROVINCES = ("An Giang,Ba Ria Vung Tau,Bac Giang,Bac Kan,Bac Lieu,Bac Ninh,Ben Tre,Binh Dinh,Binh Duong,Binh Phuoc,Binh Thuan,Ca Mau,Can Tho,Cao Bang,Da Nang,Dak Lak,Dak Nong,Dien Bien,Dong Nai,Dong Thap,Gia Lai,Ha Giang,Ha Nam,Ha Noi,Ha Tinh,Hai Duong,Hai Phong,Hau Giang,Hoa Binh,Hung Yen,Khanh Hoa,Kien Giang,Kon Tum,Lai Chau,Lam Dong,Lang Son,Lao Cai,Long An,Nam Dinh,Nghe An,Ninh Binh,Ninh Thuan,Phu Tho,Phu Yen,Quang Binh,Quang Nam,Quang Ngai,Quang Ninh,Quang Tri,Soc Trang,Son La,Tay Ninh,Thai Binh,Thai Nguyen,Thanh Hoa,Thua Thien Hue,Tien Giang,Tra Vinh,Tuyen Quang,Vinh Long,Vinh Phuc,Yen Bai,Sai Gon").split(",");
+  // 2025 merger: new province -> the old provinces it absorbed (names as in the route slugs; Sai Gon = old Ho Chi Minh).
+  const MERGED = {
+    "An Giang": ["An Giang", "Kien Giang"], "Bac Ninh": ["Bac Giang", "Bac Ninh"], "Ca Mau": ["Bac Lieu", "Ca Mau"],
+    "Can Tho": ["Can Tho", "Hau Giang", "Soc Trang"], "Da Nang": ["Da Nang", "Quang Nam"], "Dak Lak": ["Dak Lak", "Phu Yen"],
+    "Dong Nai": ["Binh Phuoc", "Dong Nai"], "Dong Thap": ["Dong Thap", "Tien Giang"], "Gia Lai": ["Binh Dinh", "Gia Lai"],
+    "Hai Phong": ["Hai Duong", "Hai Phong"], "Sai Gon": ["Ba Ria Vung Tau", "Binh Duong", "Sai Gon"], "Hung Yen": ["Hung Yen", "Thai Binh"],
+    "Khanh Hoa": ["Khanh Hoa", "Ninh Thuan"], "Lam Dong": ["Binh Thuan", "Dak Nong", "Lam Dong"], "Lao Cai": ["Lao Cai", "Yen Bai"],
+    "Ninh Binh": ["Ha Nam", "Nam Dinh", "Ninh Binh"], "Phu Tho": ["Hoa Binh", "Phu Tho", "Vinh Phuc"], "Quang Ngai": ["Kon Tum", "Quang Ngai"],
+    "Quang Tri": ["Quang Binh", "Quang Tri"], "Tay Ninh": ["Long An", "Tay Ninh"], "Thai Nguyen": ["Bac Kan", "Thai Nguyen"],
+    "Tuyen Quang": ["Ha Giang", "Tuyen Quang"], "Vinh Long": ["Ben Tre", "Tra Vinh", "Vinh Long"],
+  };
+  const NEW_OF = {};
+  for (const [nw, olds] of Object.entries(MERGED)) olds.forEach((o) => (NEW_OF[o] = nw));
+  const provinceOf = (shown) => (PROVINCES.find((p) => shown === p || shown.endsWith(" - " + p)) || "");
+  function mergeHint(shown) {
+    const p = provinceOf(shown);
+    const nw = NEW_OF[p];
+    if (!nw) return "";
+    const label = (n) => (n === "Sai Gon" ? "Ho Chi Minh" : n);
+    if (nw === p) return `${label(p)} 是 2025 年合併後的新省（併入 ${MERGED[nw].filter((o) => o !== p).map(label).join("、")}）`;
+    return `${label(p)} 已併入新省 ${label(nw)}（Vexere 標 OLD）`;
+  }
   const prettyName = (n) => {
     const hit = PROVINCES.filter((p) => n.endsWith(" " + p)).sort((a, b) => b.length - a.length)[0];
     return hit ? `${n.slice(0, -hit.length - 1)} - ${hit}` : n;
@@ -93,6 +115,11 @@
     const res = await fetch(`routes/${o.file}.json`);
     destinations = (await res.json()).map(([n, path]) => [prettyName(n), path]);
     $("toList").innerHTML = destinations.map(([n]) => `<option value="${esc(n)}">`).join("");
+  }
+
+  function updateHints() {
+    $("fromHint").textContent = mergeHint($("from").value.trim());
+    $("toHint").textContent = mergeHint($("to").value.trim());
   }
 
   function selectedPath() {
@@ -390,8 +417,11 @@
 
   // ---------- wiring ----------
   $("search").addEventListener("submit", search);
+  $("from").addEventListener("input", updateHints);
+  $("to").addEventListener("input", updateHints);
   $("from").addEventListener("change", () => {
     $("to").value = "";
+    updateHints();
     loadDestinations($("from").value);
   });
   $("swap").addEventListener("click", async () => {
@@ -401,6 +431,7 @@
     $("from").value = t;
     await loadDestinations(t);
     $("to").value = f;
+    updateHints();
     setStatus(destinations.some(([n]) => n.toLowerCase() === f.trim().toLowerCase()) ? "" : `Vexere 沒有 ${t} → ${f} 這條路線。`, !destinations.some(([n]) => n.toLowerCase() === f.trim().toLowerCase()));
   });
   ["depFrom", "depTo", "arrFrom", "arrTo", "sort"].forEach((id) => $(id).addEventListener("change", () => current && renderOperators()));
@@ -440,9 +471,11 @@
       $("fromList").innerHTML = origins.map((o) => `<option value="${esc(o.name)}">`).join("");
       if (params.get("from")) {
         $("from").value = prettyName(params.get("from"));
+        updateHints();
         await loadDestinations($("from").value);
         if (params.get("to")) {
           $("to").value = prettyName(params.get("to"));
+          updateHints();
           if (selectedPath()) search();
         }
       }

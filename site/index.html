@@ -18,11 +18,13 @@
       <label>出發地
         <input id="from" list="fromList" placeholder="例：Sai Gon" autocomplete="off" required>
         <datalist id="fromList"></datalist>
+        <small id="fromHint" class="hint"></small>
       </label>
       <button type="button" id="swap" title="對調出發地與目的地" aria-label="對調">⇅</button>
       <label>目的地
         <input id="to" list="toList" placeholder="例：Da Lat Lam Dong" autocomplete="off" required>
         <datalist id="toList"></datalist>
+        <small id="toHint" class="hint"></small>
       </label>
       <button type="submit" id="go">查詢</button>
     </form>

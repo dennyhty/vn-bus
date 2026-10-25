@@ -137,3 +137,4 @@ fieldset.range select { min-height: 34px; padding: 4px 6px; }
 .chip .arr { color: var(--muted); font-size: .8rem; }
 .gmaps { font-size: .8rem; color: var(--accent); white-space: nowrap; margin-left: 4px; }
 #mapSection { margin-top: 20px; }
+.hint { color: var(--warn); font-size: .8rem; min-height: 0; }
