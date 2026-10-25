@@ -193,6 +193,13 @@
     return points.map((p) => `<li>${esc(p.address || p.fullAddress)} ${gmapsLink(p.fullAddress)}<span class="vi">${esc(p.fullAddress)}</span></li>`).join("");
   }
 
+  const fmtDur = (m) => {
+    const t = Math.round(m / 5) * 5;
+    const h = Math.floor(t / 60);
+    const r = t % 60;
+    return h ? (r ? `${h} 小時 ${r} 分` : `${h} 小時`) : `${r} 分`;
+  };
+  const hasOwnDuration = (op) => !!(op.sample?.date && op.sample?.arriveAt);
   function renderOperators() {
     const depFrom = $("depFrom").value;
     const depTo = $("depTo").value;
@@ -204,7 +211,7 @@
       const shown = o.times
         .map((t) => ({ dep: t, arr: dur == null ? null : fmtMin(toMin(t) + dur) }))
         .filter(({ dep, arr }) => inRange(toMin(dep), depFrom, depTo) && ((!arrFrom && !arrTo) || (arr != null && inRange(toMin(arr), arrFrom, arrTo))));
-      return { ...o, shown };
+      return { ...o, shown, dur };
     });
     if (filtering) ops = ops.filter((o) => o.shown.length);
     const sorters = {
@@ -212,6 +219,7 @@
       fare: (a, b) => (a.fareMin ?? 1e12) - (b.fareMin ?? 1e12),
       first: (a, b) => (a.shown[0]?.dep || "99").localeCompare(b.shown[0]?.dep || "99"),
       count: (a, b) => b.shown.length - a.shown.length,
+      duration: (a, b) => (a.dur ?? 1e9) - (b.dur ?? 1e9),
     };
     ops.sort(sorters[$("sort").value]);
 
@@ -235,7 +243,7 @@
             <div><span class="op-name">${esc(o.name)}</span>${o.nameVi ? `<div class="op-vi">${esc(o.nameVi)}</div>` : ""}</div>
             <div class="fare">${fare}</div>
           </div>
-          <div class="meta">${o.rating ? `★ ${o.rating}（${o.ratingCount}）` : "尚無評分"} · 每天 ${o.times.length} 班</div>
+          <div class="meta">${o.rating ? `★ ${o.rating}（${o.ratingCount}）` : "尚無評分"} · 每天 ${o.times.length} 班${o.dur ? ` · 路途約 ${fmtDur(o.dur)}${hasOwnDuration(o) ? "" : "（路線平均）"}` : ""}</div>
           <div class="chips">${o.shown.map(({ dep, arr }) => `<span class="chip" title="抵達時間為推算">${esc(dep)}${arr ? ` <span class="arr">→ ~${esc(arr)}</span>` : ""}</span>`).join("")}</div>
           <details class="op-details">
             <summary>上下車點與範例班次</summary>
