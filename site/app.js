@@ -175,7 +175,11 @@
             <b>下車點</b><ul class="addr">${addrList(o.dropoffPoints)}</ul>
             ${sample}
           </details>
-          <button type="button" class="map-btn" data-op="${o.id}">${mapOps.has(o.id) ? "✓ 已在地圖上" : "📍 顯示在地圖"}</button>
+          ${
+            o.pickupPoints.length + o.dropoffPoints.length
+              ? `<button type="button" class="map-btn" data-op="${o.id}">${mapOps.has(o.id) ? "✓ 已在地圖上" : "📍 顯示在地圖"}</button>`
+              : `<div class="meta">Vexere 沒有提供這家的上下車點</div>`
+          }
         </li>`;
       })
       .join("");
