@@ -19,6 +19,9 @@
   const esc = (s) =>
     String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // Google resolves the address itself, so this is more accurate than our geocoded position.
+  const gmapsUrl = (address) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${address}, Vietnam`)}`;
+  const gmapsLink = (address) => `<a class="gmaps" href="${esc(gmapsUrl(address))}" target="_blank" rel="noopener">Google 地圖 ↗</a>`;
 
   const store = {
     get(k) {
@@ -153,7 +156,7 @@
 
   function addrList(points) {
     if (!points.length) return `<li class="muted">沒有資料</li>`;
-    return points.map((p) => `<li>${esc(p.address || p.fullAddress)}<span class="vi">${esc(p.fullAddress)}</span></li>`).join("");
+    return points.map((p) => `<li>${esc(p.address || p.fullAddress)} ${gmapsLink(p.fullAddress)}<span class="vi">${esc(p.fullAddress)}</span></li>`).join("");
   }
 
   function renderOperators() {
@@ -304,7 +307,7 @@
     geoPoints.forEach((p, i) => {
       const color = p.kind === "pickup" ? "#1a9b5a" : "#d64545";
       p.marker = L.circleMarker([p.lat, p.lon], { radius: 8, color: "#fff", weight: 2, fillColor: color, fillOpacity: 0.95 })
-        .bindPopup(`<b>${esc(p.op)}</b><br>${p.kind === "pickup" ? "上車點" : "下車點"}：${esc(p.label)}<br><small>${esc(p.addr)}</small>${p.approx ? "<br><small>位置只到大約的區域</small>" : ""}`)
+        .bindPopup(`<b>${esc(p.op)}</b><br>${p.kind === "pickup" ? "上車點" : "下車點"}：${esc(p.label)}<br><small>${esc(p.addr)}</small><br>${gmapsLink(p.addr)}${p.approx ? "<br><small>位置只到大約的區域</small>" : ""}`)
         .addTo(layers);
       bounds.push([p.lat, p.lon]);
     });
@@ -324,7 +327,7 @@
       ? items
           .map(
             ({ p, i, d }) =>
-              `<li data-i="${i}">${p.kind === "pickup" ? "上車" : "下車"}｜${esc(p.op)}｜${esc(p.label)}${p.approx ? ' <span class="approx">約略</span>' : ""}${d != null ? `<span class="dist">${fmtKm(d)}</span>` : ""}</li>`,
+              `<li data-i="${i}">${p.kind === "pickup" ? "上車" : "下車"}｜${esc(p.op)}｜${esc(p.label)}${p.approx ? ' <span class="approx">約略</span>' : ""}${d != null ? `<span class="dist">${fmtKm(d)}</span>` : ""} ${gmapsLink(p.addr)}</li>`,
           )
           .join("")
       : `<li class="muted" style="list-style:none">先到「車行與時刻」按車行的「顯示在地圖」，這裡才會有點。</li>`;
@@ -422,6 +425,7 @@
     }
   });
   $("pointList").addEventListener("click", (e) => {
+    if (e.target.closest("a")) return; // let the Google Maps link open without moving the map
     const li = e.target.closest("li[data-i]");
     const p = li && geoPoints[Number(li.dataset.i)];
     if (!p) return;
