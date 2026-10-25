@@ -1,27 +1,37 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { extractRouteState, normalizeRoute } from "../src/parse.js";
+import { extractSeo, normalizeRoute } from "../src/parse.js";
 
+// Trimmed from a real undated Vexere route page (Saigon -> Da Lat).
 const html = readFileSync(new URL("./fixtures/saigon-da-lat.html", import.meta.url), "utf8");
 
-test("normalizes a Vexere route page", () => {
-  const route = normalizeRoute(extractRouteState(html));
-  assert.equal(route.from.name, "Sai Gon");
+test("normalizes the undated route page into a timetable", () => {
+  const route = normalizeRoute(extractSeo(html));
+  assert.equal(route.from.name, "Ho Chi Minh City");
   assert.equal(route.to.name, "Da Lat");
-  assert.equal(route.trips.length, 3);
-  const t = route.trips[0];
-  assert.equal(t.operator, "Đà Lạt ơi");
-  assert.equal(t.vehicle, "VIP Cabin bus");
-  assert.equal(t.departTime, "22:35");
-  assert.equal(t.price, 370000);
-  assert.equal(t.seatsLeft, 18);
-  assert.equal(t.pickup.name, "Thanh Le Park Office");
-  assert.ok(route.pickupPoints.length > 0);
-  assert.equal(typeof route.pickupPoints[0].lat, "number");
-  assert.ok(route.dropoffPoints.some((p) => p.name === "Prenn Pass"));
+  assert.equal(route.totalOperators, 24);
+  assert.equal(route.fareMin, 189000);
+  assert.equal(route.operators.length, 3);
+
+  const op = route.operators[0];
+  assert.equal(op.name, "Da Lat oi");
+  assert.deepEqual(op.times.slice(0, 2), ["22:20", "22:30"]);
+  assert.equal(op.rating, 4.9);
+  assert.ok(op.pickupPoints.length > 0);
+  assert.match(op.pickupPoints[0].fullAddress, /Dĩ An/);
+  assert.ok(op.dropoffPoints[0].fullAddress.length > 0);
+});
+
+test("attaches the sample trip and Vietnamese name when the operator has one", () => {
+  const route = normalizeRoute(extractSeo(html));
+  const withSample = route.operators.filter((o) => o.sample);
+  for (const o of withSample) {
+    assert.ok(o.sample.from.name);
+    assert.equal(typeof o.sample.seatsLeft, "number");
+  }
 });
 
 test("rejects pages without route data", () => {
-  assert.throws(() => extractRouteState("<html></html>"), /NEXT_DATA_NOT_FOUND/);
+  assert.throws(() => extractSeo("<html></html>"), /NEXT_DATA_NOT_FOUND/);
 });

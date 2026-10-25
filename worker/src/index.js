@@ -6,7 +6,7 @@
 // dated "?date=" form). Responses are cached so repeated searches do not reach
 // Vexere more than once every CACHE_SECONDS.
 
-import { extractRouteState, normalizeRoute } from "./parse.js";
+import { extractSeo, normalizeRoute } from "./parse.js";
 
 const PATH_RE = /^bus-ticket-booking-from-[a-z0-9-]+-to-[a-z0-9-]+-\d+t\d+\.html$/;
 const CACHE_SECONDS = 300;
@@ -37,7 +37,7 @@ async function fetchRoute(path) {
     },
   });
   if (!res.ok) throw new Error(`VEXERE_HTTP_${res.status}`);
-  return normalizeRoute(extractRouteState(await res.text()));
+  return normalizeRoute(extractSeo(await res.text()));
 }
 
 export default {

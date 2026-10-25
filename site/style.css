@@ -51,8 +51,8 @@ h3 { font-size: 1rem; margin: 8px 0; }
   gap: 10px;
   align-items: end;
 }
-#search label { display: flex; flex-direction: column; font-size: .85rem; color: var(--muted); gap: 4px; }
-select, button {
+#search label, .toolbar label { display: flex; flex-direction: column; font-size: .85rem; color: var(--muted); gap: 4px; }
+select, button, input:not([type=checkbox]) {
   font: inherit;
   color: var(--text);
   background: var(--card);
@@ -73,7 +73,9 @@ button { cursor: pointer; }
 .status.error { color: var(--dropoff); }
 
 .summary { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
-.summary a { color: var(--accent); }
+.summary .live { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: .85rem; color: var(--muted); }
+.btn { display: inline-block; background: var(--accent); color: #fff; text-decoration: none; padding: 9px 12px; border-radius: 8px; font-weight: 600; font-size: .9rem; }
+input { color: var(--text); background: var(--card); }
 
 .tabs { display: flex; gap: 6px; margin: 14px 0 10px; }
 .tabs button[aria-selected="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -109,3 +111,21 @@ button { cursor: pointer; }
 .points li { cursor: pointer; padding: 2px 0; }
 .points li:hover { color: var(--accent); }
 .points .dist { color: var(--muted); font-size: .8rem; margin-left: 4px; }
+
+.op-name { font-weight: 700; font-size: 1.05rem; }
+.op-vi { color: var(--muted); font-size: .85rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.chip { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.fare { font-weight: 700; color: var(--accent); }
+details.op-details { margin-top: 6px; font-size: .9rem; }
+details.op-details summary { cursor: pointer; color: var(--accent); }
+.addr { margin: 4px 0 8px 0; padding-left: 1.2em; }
+.addr li { margin: 3px 0; }
+.addr .vi { color: var(--muted); font-size: .85rem; display: block; }
+.sample { background: var(--bg); border-radius: 8px; padding: 8px 10px; margin-top: 8px; }
+.map-btn { margin-top: 8px; font-size: .85rem; min-height: 34px; padding: 4px 10px; }
+.point-list { padding-left: 1.4em; font-size: .9rem; }
+.point-list li { cursor: pointer; padding: 3px 0; }
+.point-list li:hover { color: var(--accent); }
+.point-list .dist { color: var(--muted); font-size: .8rem; margin-left: 4px; }
+.approx { color: var(--warn); font-size: .8rem; }

@@ -1,191 +1,141 @@
 {
- "date": "2026-10-28T00:00:00+07:00",
- "totalPages": 43,
- "totalTrips": 849,
  "from": {
-  "id": "29",
-  "name": "Sai Gon",
+  "name": "Ho Chi Minh City",
+  "nameVi": "Hồ Chí Minh",
   "lat": 10.768434817,
   "lon": 106.6850563065
  },
  "to": {
-  "id": "457",
   "name": "Da Lat",
+  "nameVi": "Đà Lạt",
   "lat": 11.9404192,
   "lon": 108.4583132
  },
- "trips": [
+ "distanceKm": 318,
+ "durationHours": 6.9,
+ "totalTrips": 817,
+ "totalOperators": 24,
+ "fareMin": 189000,
+ "fareMax": 550000,
+ "operators": [
   {
-   "code": "v2CMPsCRD2_AkaAjIzIgI1MDDx4cYLOgoyOC0xMC0yMDI2SB1QyQNYAGgBqAHwkwKgAwE",
-   "operator": "Đà Lạt ơi",
-   "vehicle": "VIP Cabin bus",
-   "departTime": "22:35",
-   "arriveTime": "06:05",
-   "duration": "7h30m",
-   "departAt": "2026-10-28T22:35+07:00",
-   "arriveAt": "2026-10-29T06:05+07:00",
-   "price": 370000,
-   "originalPrice": 450000,
-   "seatsLeft": 18,
-   "seatsTotal": 22,
+   "id": 35312,
+   "name": "Da Lat oi",
+   "nameVi": null,
+   "url": "https://vexere.com/en-US/da-lat-oi-bus",
    "rating": 4.9,
-   "ratingCount": 4939,
-   "pickup": {
-    "name": "Thanh Le Park Office",
-    "address": "Đại lộ Bình Dương - Thanh Le Park Office"
-   },
-   "dropoff": {
-    "name": "Ho Xuan Huong office",
-    "address": "E1, Khu QH Phạm Hồng Thái - Ho Xuan Huong office"
-   },
-   "routeLabel": "Route: Hang Xanh - District 1 - District 2 - Expressway",
-   "routeDetail": "The bus route you are viewing follows this path: Hang Xanh Intersection → District 1 → District 2 → Long Thanh - Dau Giay Expressway → National Highway 20 → Da Lat",
-   "refundable": true
+   "ratingCount": 4932,
+   "times": [
+    "22:20",
+    "22:30",
+    "23:05",
+    "23:15",
+    "23:40",
+    "23:45"
+   ],
+   "fareMin": 525000,
+   "fareMax": 525000,
+   "pickupPoints": [
+    {
+     "address": "Quốc lộ 1K",
+     "fullAddress": "Go! Dĩ An Quốc lộ 1K Dĩ An Bình Dương"
+    },
+    {
+     "address": "Số 111 Đ. Phạm Ngũ Lão",
+     "fullAddress": "Trạm Quận 1 Số 111 Đ. Phạm Ngũ Lão Phường Phạm Ngũ Lão Quận 1 Hồ Chí Minh"
+    },
+    {
+     "address": "Đại lộ Bình Dương",
+     "fullAddress": "VP Công viên Thanh Lễ Đại lộ Bình Dương Phường Hiệp Thành Thủ Dầu Một Bình Dương"
+    }
+   ],
+   "dropoffPoints": [
+    {
+     "address": "Lô E1, Khu QH Phạm Hồng Thái",
+     "fullAddress": "Văn phòng Hồ Xuân Hương Lô E1, Khu QH Phạm Hồng Thái Phường 10 Đà Lạt Lâm Đồng"
+    }
+   ],
+   "sample": null
   },
   {
-   "code": "v2CMqkDBCuxwsaAjIzIgIwMDCM6K8POgoyOC0xMC0yMDI2SB1QyQNYAGgBqAGX-wGgAwE",
-   "operator": "Bình Minh Tải",
-   "vehicle": "VIP Cabin bus",
-   "departTime": "23:00",
-   "arriveTime": "05:36",
-   "duration": "6h36m",
-   "departAt": "2026-10-28T23:00+07:00",
-   "arriveAt": "2026-10-29T05:36+07:00",
-   "price": 350000,
-   "originalPrice": 500000,
-   "seatsLeft": 15,
-   "seatsTotal": 23,
-   "rating": 4.8,
-   "ratingCount": 6640,
-   "pickup": {
-    "name": "District 1 Office (t)",
-    "address": "119 Nguyen Cu Trinh St - District 1 Office (t)"
-   },
-   "dropoff": {
-    "name": "Intercity Bus Station Da Lat",
-    "address": "01 To Hien Thanh St - Intercity Bus Station Da Lat"
-   },
-   "routeLabel": null,
-   "routeDetail": null,
-   "refundable": true
-  },
-  {
-   "code": "v2CNy7CxCUuAkaAjIzIgI1NTCnib4BOgoyOC0xMC0yMDI2SB1QyQNYAGgBqAGR7QGgAwE",
-   "operator": "Trọng Minh",
-   "vehicle": "VIP Cabin bus",
-   "departTime": "23:55",
-   "arriveTime": "07:25",
-   "duration": "7h30m",
-   "departAt": "2026-10-28T23:55+07:00",
-   "arriveAt": "2026-10-29T07:25+07:00",
-   "price": 450000,
-   "originalPrice": 500000,
-   "seatsLeft": 12,
-   "seatsTotal": 22,
+   "id": 13184,
+   "name": "Tu Tien",
+   "nameVi": null,
+   "url": "https://vexere.com/en-US/tu-tien-bus",
    "rating": 4.9,
-   "ratingCount": 2787,
-   "pickup": {
-    "name": "Western bus station",
-    "address": "395 Kinh Duong Vuong street (Please wait for the operator at the waiting room) - Western bus station"
-   },
-   "dropoff": {
-    "name": "Da Thien Bus Station",
-    "address": "Da Thien Bus Station (near Mong Mo Hills), Mai Anh Dao Street - Da Thien Bus Station"
-   },
-   "routeLabel": "Bus company regulations",
-   "routeDetail": "BUS COMPANY NOTE\n1. Arrival times are approximate and depend on weather conditions and traffic conditions (during the day, the bus may arrive 1-2 hours late, and at night it may arrive 1-2 hours early compared to the scheduled time).\n\n2. All Trong Minh buses depart from the Western Bus Station. Buses showing 303 Tran Phu, District 5 as the pick-up point are shuttle buses that take passengers from Tran Phu to the Western Bus Station. Please arrive 30 minutes before departure time to board the shuttle bus.\n\n3. For buses that do not show Tran Phu as the pick-up point, please travel to the Western Bus Station to depart.\n\n4. For private rooms: No child policy applies, maximum 2 people per room regardless of age or size.\n5. For double rooms, 1 guest can be accompanied by a baby under 120cm. Over 120cm tall, double room rate applies (not applicable with promotional tickets).\n6. Checked baggage: Each passenger is allowed to check in 1 piece of baggage with a maximum weight of 20kg, packed together in one piece and not separated. If baggage exceeds the weight limit, passengers will have to pay extra excess baggage fees. Checked baggage dimensions must not exceed 60cm x 40cm x 20cm.\n7. THE BUS COMPANY DOES NOT ACCEPT PETS IN ANY FORM. IF PASSENGERS INTENTIONALLY BRING PETS, THE BUS COMPANY HAS THE RIGHT TO REFUSE TRANSPORTATION OF PETS OR PASSENGERS WITHOUT REFUNDING THE TICKET.\nNote Regarding Complaints: For the best support, please submit your feedback or complaint (if any) within 24 hours of the end of your trip. After this time, the transportation company reserves the right to refuse to process any complaints to ensure objectivity. We appreciate your understanding.\n\nThank you sincerely.",
-   "refundable": true
+   "ratingCount": 926,
+   "times": [
+    "01:15",
+    "01:45",
+    "22:15",
+    "22:30",
+    "23:00"
+   ],
+   "fareMin": 338000,
+   "fareMax": 382500,
+   "pickupPoints": [
+    {
+     "address": "Quốc Lộ 1A",
+     "fullAddress": "Chợ An Sương Quốc Lộ 1A Phường Trung Mỹ Tây Quận 12 Hồ Chí Minh"
+    },
+    {
+     "address": "Ngã 4 Linh Xuân ",
+     "fullAddress": "Ngã 4 Linh Xuân  Ngã 4 Linh Xuân  Phường Linh Xuân Thủ Đức Hồ Chí Minh"
+    },
+    {
+     "address": "Quốc lộ 1A",
+     "fullAddress": "Ngã 4 An Sương Quốc lộ 1A Phường Trung Mỹ Tây Quận 12 Hồ Chí Minh"
+    }
+   ],
+   "dropoffPoints": [
+    {
+     "address": "01 Tô Hiến Thành",
+     "fullAddress": "Bến xe liên tỉnh Đà Lạt 01 Tô Hiến Thành Phường 3 Đà Lạt Lâm Đồng"
+    }
+   ],
+   "sample": null
+  },
+  {
+   "id": 13000,
+   "name": "Dieu Hoa",
+   "nameVi": null,
+   "url": "https://vexere.com/en-US/dieu-hoa-bus",
+   "rating": 4.9,
+   "ratingCount": 850,
+   "times": [
+    "00:19",
+    "22:02",
+    "22:45",
+    "23:05",
+    "23:14",
+    "23:30",
+    "23:42",
+    "23:50",
+    "23:59"
+   ],
+   "fareMin": 189000,
+   "fareMax": 399000,
+   "pickupPoints": [
+    {
+     "address": "263 Nguyễn Hồng Đào",
+     "fullAddress": "263 Nguyễn Hồng Đào 263 Nguyễn Hồng Đào Phường 14 Tân Bình Hồ Chí Minh"
+    },
+    {
+     "address": "501 Hoàng Hữu Nam",
+     "fullAddress": "Bến xe Miền Đông Mới 501 Hoàng Hữu Nam Phường Long Bình Quận 9 Hồ Chí Minh"
+    },
+    {
+     "address": "220 Quốc Lộ 13",
+     "fullAddress": "Văn phòng Bình Thạnh 220 Quốc Lộ 13 Phường 26 Bình Thạnh Hồ Chí Minh"
+    }
+   ],
+   "dropoffPoints": [
+    {
+     "address": "1 Đường Tô Hiến Thành",
+     "fullAddress": "Bến xe liên tỉnh Đà Lạt 1 Đường Tô Hiến Thành Phường 3 Đà Lạt Lâm Đồng"
+    }
+   ],
+   "sample": null
   }
- ],
- "pickupPoints": [
-  {
-   "name": "Hàng Xanh",
-   "district": "Hồ Chí Minh",
-   "lat": 10.801,
-   "lon": 106.712,
-   "tripCount": 96
-  },
-  {
-   "name": "Bến xe Miền Đông Cũ",
-   "district": "Hồ Chí Minh",
-   "lat": 10.8164,
-   "lon": 106.711,
-   "tripCount": 80
-  },
-  {
-   "name": "202 Lê Hồng Phong",
-   "district": "Hồ Chí Minh",
-   "lat": 10.7599,
-   "lon": 106.678,
-   "tripCount": 73
-  },
-  {
-   "name": "Phương Lâm",
-   "district": "Đồng Nai",
-   "lat": 11.288,
-   "lon": 107.492,
-   "tripCount": 104
-  },
-  {
-   "name": "Tân Phú",
-   "district": "Đồng Nai",
-   "lat": 11.2693,
-   "lon": 107.435,
-   "tripCount": 104
-  },
-  {
-   "name": "Phòng vé Phúc Lộc-Đồng Nai",
-   "district": "Đồng Nai",
-   "lat": 11.008,
-   "lon": 107.169,
-   "tripCount": 100
-  }
- ],
- "dropoffPoints": [
-  {
-   "name": "Prenn Pass",
-   "district": "Đà Lạt",
-   "lat": 11.8793891,
-   "lon": 108.4707306,
-   "tripCount": 210
-  },
-  {
-   "name": "Da Lat city (Free)",
-   "district": "Đà Lạt",
-   "lat": 11.96465629702005,
-   "lon": 108.43196464232894,
-   "tripCount": 152
-  },
-  {
-   "name": "Da Lat Office 192 Xo Viet Nghe Tinh",
-   "district": "Đà Lạt",
-   "lat": 11.964648525051272,
-   "lon": 108.43203097103721,
-   "tripCount": 151
-  },
-  {
-   "name": "Bảo Lộc",
-   "district": "Lâm Đồng",
-   "lat": 11.5364,
-   "lon": 107.817,
-   "tripCount": 104
-  },
-  {
-   "name": "Di Linh",
-   "district": "Lâm Đồng",
-   "lat": 11.595,
-   "lon": 108.079,
-   "tripCount": 104
-  },
-  {
-   "name": "Hòa Ninh",
-   "district": "Lâm Đồng",
-   "lat": 11.5393,
-   "lon": 107.942,
-   "tripCount": 104
-  }
- ],
- "fetchedAt": "2026-10-25T12:39:53.173Z",
- "sourceUrl": "https://vexere.com/en-US/bus-ticket-booking-from-saigon-to-da-lat-129t23991.html",
- "demo": true
+ ]
 }

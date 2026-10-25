@@ -1,15 +1,12 @@
-// Builds site/routes.json from Vexere's public sitemaps.
+// Builds site/routes/ from Vexere's public English route sitemaps.
 // Run on a machine that can reach vexere.com:  node scripts/build-routes.mjs
 //
-// Each entry is one English route page the Worker is allowed to fetch.
+// vexere.com/sitemap.xml -> route-en.xml -> route-en/route-en-N.xml (about 12 files).
+// robots.txt has no Sitemap line, so we start from sitemap.xml directly.
 
-import { writeFileSync } from "node:fs";
+import { ROUTE_RE, writeRoutes } from "./routes-lib.mjs";
 
-const ROUTE_RE =
-  /https:\/\/vexere\.com\/en-US\/(bus-ticket-booking-from-([a-z0-9-]+?)-to-([a-z0-9-]+)-\d+t\d+\.html)/g;
-const MAX_SITEMAPS = 60;
 const UA = "Mozilla/5.0 (compatible; vn-bus personal lookup)";
-
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function get(url) {
@@ -18,41 +15,25 @@ async function get(url) {
   return res.text();
 }
 
-function prettify(slug) {
-  return slug
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
+const locs = (xml) => [...xml.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)].map((m) => m[1]);
 
-const robots = await get("https://vexere.com/robots.txt");
-const queue = [...robots.matchAll(/^Sitemap:\s*(\S+)/gim)].map((m) => m[1]);
-const seen = new Set();
-const routes = new Map();
+const root = locs(await get("https://vexere.com/sitemap.xml"));
+const routeIndex = root.find((u) => /\/route-en\.xml$/.test(u));
+if (!routeIndex) throw new Error("route-en.xml not found in sitemap.xml");
 
-while (queue.length && seen.size < MAX_SITEMAPS) {
-  const url = queue.shift();
-  if (seen.has(url)) continue;
-  seen.add(url);
-  let xml;
-  try {
-    xml = await get(url);
-  } catch (err) {
-    console.warn("skip", err.message);
-    continue;
+const children = locs(await get(routeIndex));
+console.log(`${children.length} route sitemaps`);
+
+const paths = [];
+for (const url of children) {
+  const xml = await get(url);
+  for (const loc of locs(xml)) {
+    const m = loc.match(/\/en-US\/(bus-ticket-booking-[^/]+\.html)$/);
+    if (m && ROUTE_RE.test(m[1])) paths.push(m[1]);
   }
-  for (const m of xml.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)) {
-    const loc = m[1];
-    if (/\.xml(\.gz)?$/.test(loc)) queue.push(loc);
-  }
-  for (const m of xml.matchAll(ROUTE_RE)) {
-    const [, path, from, to] = m;
-    routes.set(path, { path, from: prettify(from), to: prettify(to) });
-  }
-  console.log(`${url}: ${routes.size} routes so far`);
+  console.log(`${url}: ${paths.length} routes so far`);
   await sleep(500);
 }
 
-const list = [...routes.values()].sort((a, b) => a.from.localeCompare(b.from) || a.to.localeCompare(b.to));
-writeFileSync(new URL("../site/routes.json", import.meta.url), JSON.stringify(list, null, 1) + "\n");
-console.log(`wrote ${list.length} routes`);
+const outDir = new URL("../site/routes", import.meta.url).pathname;
+console.log(writeRoutes(paths, outDir));
