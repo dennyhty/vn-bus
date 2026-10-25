@@ -50,11 +50,11 @@
         <div class="toolbar">
           <fieldset class="range">
             <legend>出發時間</legend>
-            <input type="time" id="depFrom" aria-label="出發時間從"> 到 <input type="time" id="depTo" aria-label="出發時間到">
+            <span class="tsel" id="depFrom" data-label="出發時間從"></span> 到 <span class="tsel" id="depTo" data-label="出發時間到"></span>
           </fieldset>
           <fieldset class="range">
             <legend>抵達（下車）時間，推算</legend>
-            <input type="time" id="arrFrom" aria-label="抵達時間從"> 到 <input type="time" id="arrTo" aria-label="抵達時間到">
+            <span class="tsel" id="arrFrom" data-label="抵達時間從"></span> 到 <span class="tsel" id="arrTo" data-label="抵達時間到"></span>
           </fieldset>
           <button type="button" id="clearTimes">清除時間</button>
           <label>排序

@@ -132,5 +132,6 @@ details.op-details summary { cursor: pointer; color: var(--accent); }
 
 fieldset.range { border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px 8px; margin: 0; color: var(--muted); font-size: .85rem; }
 fieldset.range legend { padding: 0 4px; }
-fieldset.range input { min-height: 34px; padding: 4px 6px; }
+fieldset.range select { min-height: 34px; padding: 4px 6px; }
+.tsel { display: inline-flex; align-items: center; gap: 2px; }
 .chip .arr { color: var(--muted); font-size: .8rem; }
