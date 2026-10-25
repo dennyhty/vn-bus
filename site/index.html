@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>越南巴士查詢</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>越南長途巴士查詢</h1>
+    <p class="sub">各車行的發車時間、票價範圍與上下車點。站名、車行同時顯示 Vexere app 的英文名與越南文原名。要看當天的即時座位，請點「到 Vexere 看即時班次」。</p>
+  </header>
+
+  <main>
+    <form id="search" class="card">
+      <label>出發地
+        <input id="from" list="fromList" placeholder="例：Sai Gon" autocomplete="off" required>
+        <datalist id="fromList"></datalist>
+      </label>
+      <button type="button" id="swap" title="對調出發地與目的地" aria-label="對調">⇅</button>
+      <label>目的地
+        <input id="to" list="toList" placeholder="例：Da Lat Lam Dong" autocomplete="off" required>
+        <datalist id="toList"></datalist>
+      </label>
+      <button type="submit" id="go">查詢</button>
+    </form>
+
+    <p id="status" class="status" role="status"></p>
+
+    <section id="result" hidden>
+      <div class="summary card">
+        <div>
+          <strong id="routeName"></strong>
+          <div id="routeMeta" class="muted"></div>
+        </div>
+        <div class="live">
+          <label>日期 <input type="date" id="liveDate"></label>
+          <a id="vexereLink" class="btn" target="_blank" rel="noopener">到 Vexere 看即時班次 ↗</a>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button role="tab" data-tab="operators" aria-selected="true">車行與時刻</button>
+        <button role="tab" data-tab="map" aria-selected="false">上下車點地圖</button>
+      </div>
+
+      <div id="tab-operators">
+        <div class="toolbar">
+          <label>出發時段
+            <select id="period">
+              <option value="">全部</option>
+              <option value="morning">早上 05–12</option>
+              <option value="afternoon">下午 12–18</option>
+              <option value="evening">晚上 18–22</option>
+              <option value="night">夜間 22–05</option>
+            </select>
+          </label>
+          <label>排序
+            <select id="sort">
+              <option value="rating">評分（高到低）</option>
+              <option value="fare">最低票價（低到高）</option>
+              <option value="first">最早發車</option>
+              <option value="count">班次數（多到少）</option>
+            </select>
+          </label>
+        </div>
+        <ul id="operators" class="trips"></ul>
+        <p class="note muted">發車時間是各車行平常每天的班次，票價是區間，實際以 Vexere 當天顯示為準。</p>
+      </div>
+
+      <div id="tab-map" hidden>
+        <p class="note muted">Vexere 的公開頁只提供上下車點的地址，沒有座標。地圖上的位置是用地址換算出來的，可能有誤差，請以 Vexere 與車行為準。</p>
+        <div class="toolbar">
+          <button type="button" id="locate">📍 找離我最近的點</button>
+          <span class="legend"><i class="dot pickup"></i>上車點 <i class="dot dropoff"></i>下車點 <i class="dot me"></i>我的位置</span>
+        </div>
+        <div id="mapStatus" class="muted"></div>
+        <div id="map"></div>
+        <p id="nearest" class="nearest"></p>
+        <ol id="pointList" class="point-list"></ol>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

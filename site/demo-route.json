@@ -1,0 +1,141 @@
+{
+ "from": {
+  "name": "Ho Chi Minh City",
+  "nameVi": "Hồ Chí Minh",
+  "lat": 10.768434817,
+  "lon": 106.6850563065
+ },
+ "to": {
+  "name": "Da Lat",
+  "nameVi": "Đà Lạt",
+  "lat": 11.9404192,
+  "lon": 108.4583132
+ },
+ "distanceKm": 318,
+ "durationHours": 6.9,
+ "totalTrips": 817,
+ "totalOperators": 24,
+ "fareMin": 189000,
+ "fareMax": 550000,
+ "operators": [
+  {
+   "id": 35312,
+   "name": "Da Lat oi",
+   "nameVi": null,
+   "url": "https://vexere.com/en-US/da-lat-oi-bus",
+   "rating": 4.9,
+   "ratingCount": 4932,
+   "times": [
+    "22:20",
+    "22:30",
+    "23:05",
+    "23:15",
+    "23:40",
+    "23:45"
+   ],
+   "fareMin": 525000,
+   "fareMax": 525000,
+   "pickupPoints": [
+    {
+     "address": "Quốc lộ 1K",
+     "fullAddress": "Go! Dĩ An Quốc lộ 1K Dĩ An Bình Dương"
+    },
+    {
+     "address": "Số 111 Đ. Phạm Ngũ Lão",
+     "fullAddress": "Trạm Quận 1 Số 111 Đ. Phạm Ngũ Lão Phường Phạm Ngũ Lão Quận 1 Hồ Chí Minh"
+    },
+    {
+     "address": "Đại lộ Bình Dương",
+     "fullAddress": "VP Công viên Thanh Lễ Đại lộ Bình Dương Phường Hiệp Thành Thủ Dầu Một Bình Dương"
+    }
+   ],
+   "dropoffPoints": [
+    {
+     "address": "Lô E1, Khu QH Phạm Hồng Thái",
+     "fullAddress": "Văn phòng Hồ Xuân Hương Lô E1, Khu QH Phạm Hồng Thái Phường 10 Đà Lạt Lâm Đồng"
+    }
+   ],
+   "sample": null
+  },
+  {
+   "id": 13184,
+   "name": "Tu Tien",
+   "nameVi": null,
+   "url": "https://vexere.com/en-US/tu-tien-bus",
+   "rating": 4.9,
+   "ratingCount": 926,
+   "times": [
+    "01:15",
+    "01:45",
+    "22:15",
+    "22:30",
+    "23:00"
+   ],
+   "fareMin": 338000,
+   "fareMax": 382500,
+   "pickupPoints": [
+    {
+     "address": "Quốc Lộ 1A",
+     "fullAddress": "Chợ An Sương Quốc Lộ 1A Phường Trung Mỹ Tây Quận 12 Hồ Chí Minh"
+    },
+    {
+     "address": "Ngã 4 Linh Xuân ",
+     "fullAddress": "Ngã 4 Linh Xuân  Ngã 4 Linh Xuân  Phường Linh Xuân Thủ Đức Hồ Chí Minh"
+    },
+    {
+     "address": "Quốc lộ 1A",
+     "fullAddress": "Ngã 4 An Sương Quốc lộ 1A Phường Trung Mỹ Tây Quận 12 Hồ Chí Minh"
+    }
+   ],
+   "dropoffPoints": [
+    {
+     "address": "01 Tô Hiến Thành",
+     "fullAddress": "Bến xe liên tỉnh Đà Lạt 01 Tô Hiến Thành Phường 3 Đà Lạt Lâm Đồng"
+    }
+   ],
+   "sample": null
+  },
+  {
+   "id": 13000,
+   "name": "Dieu Hoa",
+   "nameVi": null,
+   "url": "https://vexere.com/en-US/dieu-hoa-bus",
+   "rating": 4.9,
+   "ratingCount": 850,
+   "times": [
+    "00:19",
+    "22:02",
+    "22:45",
+    "23:05",
+    "23:14",
+    "23:30",
+    "23:42",
+    "23:50",
+    "23:59"
+   ],
+   "fareMin": 189000,
+   "fareMax": 399000,
+   "pickupPoints": [
+    {
+     "address": "263 Nguyễn Hồng Đào",
+     "fullAddress": "263 Nguyễn Hồng Đào 263 Nguyễn Hồng Đào Phường 14 Tân Bình Hồ Chí Minh"
+    },
+    {
+     "address": "501 Hoàng Hữu Nam",
+     "fullAddress": "Bến xe Miền Đông Mới 501 Hoàng Hữu Nam Phường Long Bình Quận 9 Hồ Chí Minh"
+    },
+    {
+     "address": "220 Quốc Lộ 13",
+     "fullAddress": "Văn phòng Bình Thạnh 220 Quốc Lộ 13 Phường 26 Bình Thạnh Hồ Chí Minh"
+    }
+   ],
+   "dropoffPoints": [
+    {
+     "address": "1 Đường Tô Hiến Thành",
+     "fullAddress": "Bến xe liên tỉnh Đà Lạt 1 Đường Tô Hiến Thành Phường 3 Đà Lạt Lâm Đồng"
+    }
+   ],
+   "sample": null
+  }
+ ]
+}
