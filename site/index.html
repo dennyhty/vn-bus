@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>越南巴士查詢</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>越南長途巴士查詢</h1>
+    <p class="sub">資料來自 Vexere 公開路線頁。站名、車行、車型保留英文，方便在 Vexere app 對照訂票。</p>
+  </header>
+
+  <main>
+    <form id="search" class="card">
+      <label>出發地
+        <select id="from" required></select>
+      </label>
+      <button type="button" id="swap" title="對調出發地與目的地" aria-label="對調">⇅</button>
+      <label>目的地
+        <select id="to" required></select>
+      </label>
+      <button type="submit" id="go">查詢班次</button>
+    </form>
+
+    <p id="status" class="status" role="status"></p>
+
+    <section id="result" hidden>
+      <div class="summary card">
+        <div>
+          <strong id="routeName"></strong>
+          <span id="routeMeta" class="muted"></span>
+        </div>
+        <a id="vexereLink" target="_blank" rel="noopener">在 Vexere 開啟此路線 ↗</a>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button role="tab" data-tab="trips" aria-selected="true">班次</button>
+        <button role="tab" data-tab="map" aria-selected="false">路線地圖</button>
+      </div>
+
+      <div id="tab-trips">
+        <div class="toolbar">
+          <label><input type="checkbox" id="hideDeparted" checked> 隱藏已發車</label>
+          <label><input type="checkbox" id="hideSoldOut" checked> 隱藏已售完</label>
+          <label>排序
+            <select id="sort">
+              <option value="time">出發時間</option>
+              <option value="price">票價（低到高）</option>
+              <option value="seats">剩餘座位（多到少）</option>
+              <option value="rating">評分（高到低）</option>
+            </select>
+          </label>
+        </div>
+        <ul id="trips" class="trips"></ul>
+        <p class="note muted">公開頁只提供前 20 班。要看更多班次，請點上方連結到 Vexere 查看。</p>
+      </div>
+
+      <div id="tab-map" hidden>
+        <div class="toolbar">
+          <button type="button" id="locate">📍 找離我最近的上下車點</button>
+          <span class="legend"><i class="dot pickup"></i>上車點 <i class="dot dropoff"></i>下車點 <i class="dot me"></i>我的位置</span>
+        </div>
+        <div id="map"></div>
+        <p id="nearest" class="nearest"></p>
+        <div class="points">
+          <div>
+            <h3>上車點</h3>
+            <ol id="pickupList"></ol>
+          </div>
+          <div>
+            <h3>下車點</h3>
+            <ol id="dropoffList"></ol>
+          </div>
+        </div>
+        <p class="note muted">上下車點是這條路線所有車行合計的地點，不一定每班車都會停。實際停靠點請在 Vexere 選班次時確認。</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
