@@ -31,7 +31,7 @@ npx wrangler login     # 會開瀏覽器登入 Cloudflare
 npx wrangler deploy    # 完成後會顯示 https://vn-bus.<你的子網域>.workers.dev
 ```
 
-把顯示的網址填到 `site/config.js` 的 `workerUrl`。
+網址填在 `site/config.js` 的 `workerUrl`（目前是 https://vn-bus.vn-bus-worker.workers.dev）。
 
 ### 2. 更新路線清單（可選）
 

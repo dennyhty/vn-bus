@@ -1,4 +1,4 @@
-// Address of the deployed Cloudflare Worker (see worker/README in the repo root README).
+// Address of the deployed Cloudflare Worker (see README).
 window.VN_BUS_CONFIG = {
-  workerUrl: "https://vn-bus.YOUR-SUBDOMAIN.workers.dev",
+  workerUrl: "https://vn-bus.vn-bus-worker.workers.dev",
 };
