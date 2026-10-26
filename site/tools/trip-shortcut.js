@@ -1,7 +1,8 @@
 // iOS Shortcuts "Run JavaScript on Web Page" code. Run it from Safari's Share sheet on a Vexere trip
 // booking page (/ticketbooking/...). Reads the trip and its stops from the page's own data and
 // returns a VN-BUS link; the shortcut's "Open URLs" action opens it in a new tab, so the Vexere page
-// stays open. Nothing is sent to a server: the data travels in the URL hash.
+// stays open. The data travels, compressed, in the link's query string (Shortcuts drops the # part);
+// VN-BUS stores nothing.
 (function () {
   var SITE = "https://dennyhty.github.io/vn-bus/trip.html";
   try {
@@ -29,10 +30,18 @@
       d: pts(ap.dropOffPoints || ap.dropoffPoints),
     };
     if (!data.p.length && !data.d.length) throw new Error("這一頁沒有上下車點，請先點進某一班車的訂票頁");
-    var json = JSON.stringify(data);
-    var hash = btoa(unescape(encodeURIComponent(json))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-    var url = SITE + "#d=" + hash;
-    completion(url);
+    var bytes = new TextEncoder().encode(JSON.stringify(data));
+    var b64 = function (u8) {
+      var s = "";
+      for (var i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]);
+      return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    };
+    var plain = function () { completion(SITE + "?d=" + b64(bytes)); };
+    // Compress so trips with many stops stay well under URL length limits.
+    if (!window.CompressionStream) return plain();
+    new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream("deflate-raw")))
+      .arrayBuffer()
+      .then(function (buf) { completion(SITE + "?z=" + b64(new Uint8Array(buf))); }, plain);
   } catch (e) {
     alert("VN-BUS：" + e.message);
     completion("");
