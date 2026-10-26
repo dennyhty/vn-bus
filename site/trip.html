@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>班次停靠點</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>班次停靠點</h1>
+    <p class="sub">資料來自你在 Vexere 打開的訂票頁，用捷徑帶過來，不經過任何伺服器。站名是 Vexere 上的越南文原名。</p>
+  </header>
+  <main>
+    <div id="status" class="status"></div>
+    <section id="trip" class="card" hidden>
+      <div class="trip-top">
+        <div class="times" id="tripTimes"></div>
+        <div class="price" id="tripFare"></div>
+      </div>
+      <div class="op" id="tripOp"></div>
+      <div class="meta" id="tripMeta"></div>
+      <p><a class="btn" id="back" target="_blank" rel="noopener">回 Vexere 訂這班車</a></p>
+    </section>
+    <section id="mapCard" class="card" hidden>
+      <div class="toolbar">
+        <button type="button" id="locate">📍 找離我最近的點</button>
+        <span class="legend"><span class="dot pickup"></span>上車 <span class="dot dropoff"></span>下車 <span class="dot me"></span>我</span>
+      </div>
+      <div id="nearest" class="nearest"></div>
+      <div id="map" class="map"></div>
+      <div class="points">
+        <div><h3>上車點</h3><ol id="pickList"></ol></div>
+        <div><h3>下車點</h3><ol id="dropList"></ol></div>
+      </div>
+    </section>
+    <p class="note muted">還沒設定捷徑？看 <a href="tools/shortcut.html">捷徑設定說明</a>。</p>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="trip.js"></script>
+</body>
+</html>

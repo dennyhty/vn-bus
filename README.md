@@ -18,6 +18,10 @@ Vexere 的即時班次只在「帶日期」的頁面和需要授權的 API 裡�
 - 站名、車行同時顯示英文（對照 Vexere app）和越南文原名。
 - Worker 會快取 5 分鐘。請保持個人、低頻率使用。
 
+## 單一班次的上下車點（iPhone 捷徑）
+
+Vexere 訂票頁（可以選座位的那頁）的資料裡有這班車所有上下車點、時間、座標與加價。`site/tools/trip-shortcut.js` 是一段 iOS 捷徑「在網頁上執行 JavaScript」用的程式：在訂票頁按「分享」執行，它只讀這一頁已載入的資料，放進網址的 `#` 後面打開 `trip.html`，不經過任何伺服器。設定步驟在 `tools/shortcut.html`。
+
 ## 設定步驟
 
 ### 1. 部署 Worker

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VN-BUS 捷徑設定</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header>
+    <h1>VN-BUS 捷徑設定（iPhone）</h1>
+    <p class="sub">設定一次之後，在 Vexere 某一班車的訂票頁按「分享」→「VN-BUS」，就會在地圖上看到這班車所有上下車點和時間。</p>
+  </header>
+  <main>
+    <div class="card">
+      <ol class="steps">
+        <li>「設定 → App → 捷徑 → 進階」，打開「允許執行腳本」。</li>
+        <li>在「捷徑」新增捷徑，命名為「VN-BUS」。在捷徑設定打開「在分享表單中顯示」，類型只留「Safari 網頁」。</li>
+        <li>加入動作「在網頁上執行 JavaScript」。點動作裡的「網頁」，選「捷徑輸入」，讓它變成藍色。</li>
+        <li>按下面的「複製程式碼」，把動作裡原本的程式碼全部換成它。不用再加其他動作。</li>
+        <li>在 Vexere 選好班車、進到訂票頁（可以選座位的那頁），按「分享」→「VN-BUS」。</li>
+      </ol>
+      <p><button type="button" id="copy">複製程式碼</button> <span id="copied" class="muted"></span></p>
+      <textarea id="code" class="code" readonly></textarea>
+      <p class="note muted">程式只讀你已經打開的那一頁，把這班車的資料放在網址的 # 後面交給 VN-BUS，不會送到任何伺服器。</p>
+    </div>
+  </main>
+  <script>
+    (async () => {
+      const code = document.getElementById("code");
+      code.value = await (await fetch("trip-shortcut.js")).text();
+      document.getElementById("copy").addEventListener("click", async () => {
+        code.select();
+        try {
+          await navigator.clipboard.writeText(code.value);
+        } catch {
+          document.execCommand("copy");
+        }
+        document.getElementById("copied").textContent = "已複製";
+      });
+    })();
+  </script>
+</body>
+</html>
