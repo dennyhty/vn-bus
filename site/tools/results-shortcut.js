@@ -50,7 +50,8 @@
           if (trips.some(function (y) { return y.idIndex === x.idIndex; })) return;
           var fare = 0;
           JSON.stringify(x.available_seat_info || x.route || {}).replace(/"fare":\[?(\d+)/, function (_, f) { fare = +f; });
-          trips.push({ idIndex: x.idIndex, id: x.route.id, fromTime: x.route.departure_time, busName: (x.company || {}).name, fareLarge: fare });
+          var sch = (x.route.schedules || [])[0] || {};
+          trips.push({ tripCode: sch.trip_code || x.trip_code, idIndex: x.idIndex, id: x.route.id, fromTime: x.route.departure_time, busName: (x.company || {}).name, fareLarge: fare });
         });
         else v.forEach(walk);
       } else if (v && typeof v === "object") Object.keys(v).forEach(function (k) { walk(v[k]); });
@@ -219,7 +220,6 @@
       var b = buttons[i];
       var card = cardOf(b);
       var info = cardInfo(card);
-      info.idx = i;
       b.click();
       var t0 = Date.now();
       var tab = await waitFor(function () { return tabsIn(card).filter(isTab)[0]; }, 3000);
@@ -244,22 +244,11 @@
 
     // Match each received stop list to its trip by trip code.
     var data = { v: 2, url: location.href, date: "", trips: [] };
-    var used = [];
     Object.keys(got).forEach(function (code) {
       var c = infoByCode[code] || {};
-      // The page data has no stop-list code; match its trip by departure time, then fare and operator.
-      var same = trips.filter(function (x) { return c.dep && hhmm(x.fromTime) === c.dep && used.indexOf(x) < 0; });
-      var score = function (x) {
-        return ([x.fareLarge, x.fare, x.originalFare].indexOf(c.fare) >= 0 ? 2 : 0) +
-          (c.op && (x.busName || x.companyName || "").toLowerCase() === c.op.toLowerCase() ? 1 : 0);
-      };
-      same.sort(function (a, b) { return score(b) - score(a); });
-      // Cards come in the same order as the page data (first page, then each See more page), so try the
-      // trip at the card's position first; otherwise the best match by time, fare and operator.
-      var atIdx = trips[c.idx];
-      var t = (atIdx && used.indexOf(atIdx) < 0 && hhmm(atIdx.fromTime) === c.dep ? atIdx : null) ||
-        trips.filter(function (x) { return x.tripCode === code; })[0] || same[0] || {};
-      used.push(t);
+      // The stop-list URL's code is the trip's tripCode (first page: __NEXT_DATA__; See more: the route API's
+      // route.schedules[0].trip_code). Only that match is trusted for the link.
+      var t = trips.filter(function (x) { return x.tripCode === code; })[0] || {};
       var d = got[code] || {};
       var shown = timesByCode[code] || {};
       // Derive the clock time of "duration 0" from any stop whose time is on screen, so the others get times too.
