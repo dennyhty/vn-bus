@@ -11,6 +11,14 @@
   window.__vnbusRunning = true;
 
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+  // Check every 50 ms until test() gives something, instead of waiting a fixed time.
+  var waitFor = async function (test, ms) {
+    for (var end = Date.now() + ms; ; ) {
+      var v = test();
+      if (v || Date.now() > end) return v;
+      await sleep(50);
+    }
+  };
   var hhmm = function (t) { var m = /(\d{1,2}):(\d{2})/.exec(String(t || "").replace(/^.*T/, "")); return m ? ("0" + m[1]).slice(-2) + ":" + m[2] : ""; };
 
   // ---------- panel ----------
@@ -92,16 +100,16 @@
       var b = buttons[i];
       b.scrollIntoView({ block: "center" });
       b.click();
-      await sleep(800);
       var card = b.closest("[class*='ticket']") || b.parentElement.parentElement;
-      var tab = Array.prototype.slice.call((card || document).querySelectorAll(".ant-tabs-tab")).filter(function (n) { return /Pick-up\/Drop-off|Điểm đón/i.test(n.textContent); })[0];
+      var tab = await waitFor(function () {
+        return Array.prototype.slice.call((card || document).querySelectorAll(".ant-tabs-tab")).filter(function (n) { return /Pick-up\/Drop-off|Điểm đón/i.test(n.textContent); })[0];
+      }, 3000);
       if (tab) tab.click();
-      for (var w = 0; w < 30 && Object.keys(got).length === before.length; w++) await sleep(200);
-      await sleep(400);
-      var times = shownTimes();
+      await waitFor(function () { return Object.keys(got).length > before.length; }, 6000);
+      var times = await waitFor(function () { var t = shownTimes(); return Object.keys(t).length ? t : null; }, 1500) || {};
       Object.keys(got).forEach(function (code) { if (before.indexOf(code) < 0) timesByCode[code] = times; });
       b.click(); // close Details again
-      await sleep(600);
+      await waitFor(function () { return !Object.keys(shownTimes()).length; }, 1000);
     }
 
     // Match each received stop list to its trip by trip code.
