@@ -1,5 +1,5 @@
-// Shows one Vexere trip's pickup and drop-off stops, handed over in the URL hash by tools/trip-shortcut.js.
-(() => {
+// Shows one Vexere trip's pickup and drop-off stops, handed over in the URL by tools/trip-shortcut.js.
+(async () => {
   const $ = (id) => document.getElementById(id);
   const vnd = (n) => (n ? Number(n).toLocaleString("en-US") + "₫" : "");
   const esc = (s) =>
@@ -20,17 +20,19 @@
     $("status").classList.toggle("error", !!error);
   };
 
-  function decode() {
-    const m = location.hash.match(/[#&]d=([^&]+)/);
+  // "?z=" is deflate-compressed, "?d=" plain; "#d=" comes from links made before Shortcuts was found
+  // to drop the hash.
+  async function decode() {
+    const m = /[?&#]([dz])=([^&]+)/.exec(location.search + location.hash);
     if (!m) return null;
-    const b64 = m[1].replace(/-/g, "+").replace(/_/g, "/");
-    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    let bytes = Uint8Array.from(atob(m[2].replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+    if (m[1] === "z") bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer());
     return JSON.parse(new TextDecoder().decode(bytes));
   }
 
   let data;
   try {
-    data = decode();
+    data = await decode();
   } catch {
     data = null;
   }
