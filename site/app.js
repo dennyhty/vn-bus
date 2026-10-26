@@ -12,6 +12,8 @@
   let layers = null;
   let me = null;
   const mapOps = new Set();
+  const nearestByOp = new Map(); // opId -> { km, label, addr } closest pickup point to `me`
+  let nearestRun = 0;
   const geoPoints = []; // { lat, lon, kind, label, addr, op, approx }
 
   // ---------- helpers ----------
@@ -150,6 +152,9 @@
       current = await loadRoute(path);
       currentPath = path;
       mapOps.clear();
+      nearestByOp.clear();
+      $("nearestStatus").textContent = "";
+      nearestRun++;
       geoPoints.length = 0;
       render();
       setStatus("");
@@ -211,7 +216,7 @@
       const shown = o.times
         .map((t) => ({ dep: t, arr: dur == null ? null : fmtMin(toMin(t) + dur) }))
         .filter(({ dep, arr }) => inRange(toMin(dep), depFrom, depTo) && ((!arrFrom && !arrTo) || (arr != null && inRange(toMin(arr), arrFrom, arrTo))));
-      return { ...o, shown, dur };
+      return { ...o, shown, dur, near: nearestByOp.get(o.id) };
     });
     if (filtering) ops = ops.filter((o) => o.shown.length);
     const sorters = {
@@ -220,6 +225,7 @@
       first: (a, b) => (a.shown[0]?.dep || "99").localeCompare(b.shown[0]?.dep || "99"),
       count: (a, b) => b.shown.length - a.shown.length,
       duration: (a, b) => (a.dur ?? 1e9) - (b.dur ?? 1e9),
+      nearest: (a, b) => (a.near?.km ?? 1e9) - (b.near?.km ?? 1e9),
     };
     ops.sort(sorters[$("sort").value]);
 
@@ -244,6 +250,7 @@
             <div class="fare">${fare}</div>
           </div>
           <div class="meta">${o.rating ? `★ ${o.rating}（${o.ratingCount}）` : "尚無評分"} · 每天 ${o.times.length} 班${o.dur ? ` · 路途約 ${fmtDur(o.dur)}${hasOwnDuration(o) ? "" : "（路線平均）"}` : ""}</div>
+          ${o.near ? `<div class="meta nearline">離你最近的上車點：${esc(o.near.label)}（約 ${fmtKm(o.near.km)}）${gmapsLink(o.near.addr)}</div>` : ""}
           <div class="chips">${o.shown.map(({ dep, arr }) => `<span class="chip" title="抵達時間為推算">${esc(dep)}${arr ? ` <span class="arr">→ ~${esc(arr)}</span>` : ""}</span>`).join("")}</div>
           <details class="op-details">
             <summary>上下車點與範例班次</summary>
@@ -311,6 +318,51 @@
       }
     }
     $("mapStatus").textContent = "";
+  }
+
+  // Rank operators by how close their nearest pickup point is. Pickup points are per operator, not per trip,
+  // and Vexere's public page does not list the stops a trip passes through.
+  function getMe() {
+    if (me) return Promise.resolve(me);
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) return reject(new Error("這個瀏覽器不支援定位。"));
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve((me = { lat: pos.coords.latitude, lon: pos.coords.longitude })),
+        (err) => reject(new Error(`無法取得位置：${err.message}`)),
+        { enableHighAccuracy: true, timeout: 15000 },
+      );
+    });
+  }
+
+  async function rankByNearest() {
+    const run = nearestRun;
+    const btn = $("nearestBtn");
+    btn.disabled = true;
+    try {
+      await getMe();
+    } catch (err) {
+      btn.disabled = false;
+      return setStatus(err.message, true);
+    }
+    $("sort").value = "nearest";
+    const ops = current.operators.filter((o) => o.pickupPoints.length);
+    const total = ops.reduce((n, o) => n + o.pickupPoints.length, 0);
+    let done = 0;
+    for (const o of ops) {
+      for (const pt of o.pickupPoints) {
+        if (run !== nearestRun) return;
+        $("nearestStatus").textContent = `正在把上車點地址換成位置… ${done}/${total}（第一次查比較慢，之後會記住）`;
+        const pos = await locatePoint(pt);
+        done++;
+        if (!pos) continue;
+        const d = km(me, pos);
+        const best = nearestByOp.get(o.id);
+        if (!best || d < best.km) nearestByOp.set(o.id, { km: d, label: pt.address || pt.fullAddress, addr: pt.fullAddress });
+      }
+      renderOperators();
+    }
+    $("nearestStatus").textContent = nearestByOp.size ? "" : "找不到可以換成位置的上車點。";
+    btn.disabled = false;
   }
 
   // ---------- map ----------
@@ -449,6 +501,7 @@
   });
   $("liveDate").addEventListener("change", updateLiveLink);
   $("locate").addEventListener("click", locate);
+  $("nearestBtn").addEventListener("click", () => current && rankByNearest());
   $("operators").addEventListener("click", (e) => {
     const btn = e.target.closest(".map-btn");
     if (!btn) return;
