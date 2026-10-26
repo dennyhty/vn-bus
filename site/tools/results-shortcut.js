@@ -40,8 +40,23 @@
   var got = {};
   var keep = function (url, text) {
     var m = /\/trip\/([^/?]+)\/pickup_dropoff_points/.exec(url || "");
-    if (!m) return;
-    try { got[m[1]] = JSON.parse(text).data; } catch (e) {}
+    if (m) { try { got[m[1]] = JSON.parse(text).data; } catch (e) {} return; }
+    // A "See more" page of trips: keep the trips (they carry the id the pinned_trips link needs).
+    var walk = function (v) {
+      if (Array.isArray(v)) {
+        // Vexere's route API: each trip has idIndex ("<id>_<YYYY-MM-DD>_<HH:MM>_<pickup>_<drop-off>", the
+        // pinned_trips value), route.departure_time and company.name.
+        if (v.length && v[0] && v[0].idIndex && v[0].route) v.forEach(function (x) {
+          if (trips.some(function (y) { return y.idIndex === x.idIndex; })) return;
+          var fare = 0;
+          JSON.stringify(x.available_seat_info || x.route || {}).replace(/"fare":\[?(\d+)/, function (_, f) { fare = +f; });
+          var sch = (x.route.schedules || [])[0] || {};
+          trips.push({ tripCode: sch.trip_code || x.trip_code, idIndex: x.idIndex, id: x.route.id, fromTime: x.route.departure_time, busName: (x.company || {}).name, fareLarge: fare });
+        });
+        else v.forEach(walk);
+      } else if (v && typeof v === "object") Object.keys(v).forEach(function (k) { walk(v[k]); });
+    };
+    try { walk(JSON.parse(text)); } catch (e) {}
   };
   // Shortcuts runs this code in its own copy of window, so hooking XMLHttpRequest here would not see the
   // page's requests. Put the hook in the page with a <script> tag; it hands each stop list back through a
@@ -50,7 +65,7 @@
     if (window.__vnbusHook) return;
     window.__vnbusHook = true;
     var hand = function (url, text) {
-      if (!/pickup_dropoff_points/.test(url || "")) return;
+      if (!/pickup_dropoff_points/.test(url || "") && !/"idIndex"/.test(text || "")) return;
       var el = document.createElement("script");
       el.type = "application/json";
       el.setAttribute("data-vnbus", url);
@@ -66,7 +81,7 @@
     window.fetch = function (input) {
       return xfetch.apply(this, arguments).then(function (res) {
         var url = typeof input === "string" ? input : input && input.url;
-        if (/pickup_dropoff_points/.test(url || "")) res.clone().text().then(function (t) { hand(url, t); });
+        if (/json/.test(res.headers.get("content-type") || "")) res.clone().text().then(function (t) { hand(url, t); });
         return res;
       });
     };
@@ -102,26 +117,39 @@
   var tabsIn = function (card) { return Array.prototype.slice.call(card.querySelectorAll(".ant-tabs-tab")).filter(function (n) { return n.offsetParent; }); };
   // What the card shows: "Phương Trang ★4.9 (5302)", "Limousine sleeping bus", "17:20 • Bến xe Bình Minh",
   // "20:40 • Bến xe Ga", "220,000 VND", "33 seats left". Read with Details closed.
+  // "17:00 • Văn phòng Chợ Lá..." may come as one line or as "17:00", "•", "Văn phòng…" lines.
+  var timedLines = function (lines) {
+    var out = [];
+    lines.forEach(function (l, i) {
+      var m = /^(\d{1,2}:\d{2})\s*[•·]?\s*(.*)$/.exec(l);
+      if (!m || /\d{2}-\d{2}-\d{4}/.test(l)) return;
+      var name = m[2];
+      for (var j = i + 1; !name && j < lines.length && j <= i + 3; j++) if (!/^[•·]$|^\d|shuttle|đưa đón|trung chuyển/i.test(lines[j])) name = lines[j];
+      out.push([hhmm(m[1]), (name || "").replace(/\s*(\.\.\.|…)$/, "")]);
+    });
+    return out;
+  };
   var cardInfo = function (card) {
     var lines = (card.innerText || "").split("\n").map(function (x) { return x.trim(); }).filter(Boolean);
     var stops = [], fare = 0, seats = null, words = [];
     lines.forEach(function (l) {
       var m;
-      if ((m = /^(\d{1,2}:\d{2})\s*[•·]\s*(.+)$/.exec(l))) stops.push([hhmm(m[1]), m[2]]);
-      else if (!fare && (m = /^([\d.,]+)\s*(VND|đ|₫)/i.exec(l))) fare = +m[1].replace(/[.,]/g, "");
+      if (/^(\d{1,2}:\d{2})/.test(l) || /^[•·]$/.test(l)) return;
+      if (!fare && (m = /^([\d.,]+)\s*(VND|đ|₫)/i.exec(l))) fare = +m[1].replace(/[.,]/g, "");
       else if ((m = /^(\d+)\s*(seats? left|chỗ trống)/i.exec(l))) seats = +m[1];
       else if (!/^\d|^★|details|book|call|^\*|belongs|thuộc|instant|free|shuttle|live|no prepayment|\d+h\d*m?$/i.test(l)) words.push(l.replace(/\s*★.*$/, ""));
     });
-    return { op: words[0] || "", veh: words[1] || "", dep: (stops[0] || [])[0] || "", arr: (stops[1] || [])[0] || "", fare: fare, seats: seats };
+    stops = timedLines(lines);
+    words = words.filter(function (w) { return !stops.some(function (st) { return st[1] && w.indexOf(st[1]) === 0; }); });
+    return { stops: stops, op: words[0] || "", veh: words[1] || "", dep: (stops[0] || [])[0] || "", arr: (stops[1] || [])[0] || "", fare: fare, seats: seats };
   };
 
   // The panel shows each stop as "16:40 • Tan Dien Roundabout"; read those times from what is on screen.
   var shownTimes = function (root) {
     var out = {};
     (root || document).querySelectorAll(".ant-tabs-tabpane-active").forEach(function (pane) {
-      (pane.innerText || "").split("\n").forEach(function (line) {
-        var m = /^\s*(\d{1,2}:\d{2})\s*[•·]\s*(.+?)\s*$/.exec(line);
-        if (m) out[m[2]] = hhmm(m[1]);
+      timedLines((pane.innerText || "").split("\n").map(function (x) { return x.trim(); }).filter(Boolean)).forEach(function (st) {
+        if (st[1]) out[st[1]] = st[0];
       });
     });
     return out;
@@ -131,7 +159,15 @@
   // ?pinned_trips=<trip id>_<YYYY-MM-DD>_<HH:MM>_<pickup id>_<drop-off id>.
   var pinUrl = function (t, d, dep) {
     var id = t.id || t.tripId || t.trip_id;
-    var dm = /(\d{2})-(\d{2})-(\d{4})/.exec(t.departure_date || new URLSearchParams(location.search).get("date") || "");
+    var u = new URL(location.href);
+    u.searchParams.delete("pinned_trips");
+    u.hash = "";
+    var pin = function (v) { return u.href + (u.search ? "&" : "?") + "pinned_trips=" + v; };
+    if (t.idIndex) return pin(t.idIndex);
+    // The page's ?date= is DD-MM-YYYY; the trip's departure_date is ISO ("2026-10-28T00:00:00+07:00").
+    var dm = /(\d{2})-(\d{2})-(\d{4})/.exec(new URLSearchParams(location.search).get("date") || "");
+    var iso = /(\d{4})-(\d{2})-(\d{2})/.exec(t.departure_date || "");
+    if (!dm && iso) dm = [iso[0], iso[3], iso[2], iso[1]];
     var pid = function (list, last) {
       var l = (list || []).filter(function (p) { return !p.hidden; });
       var p = last ? l[l.length - 1] : l[0];
@@ -139,10 +175,7 @@
     };
     var pick = pid(d.pickup_points), drop = pid(d.drop_off_points, true);
     if (!id || !dm || !dep) return "";
-    var u = new URL(location.href);
-    u.searchParams.delete("pinned_trips");
-    u.hash = "";
-    return u.href + (u.search ? "&" : "?") + "pinned_trips=" + [id, dm[3] + "-" + dm[2] + "-" + dm[1], dep, pick || "", drop || ""].join("_");
+    return pin([id, dm[3] + "-" + dm[2] + "-" + dm[1], dep, pick || "", drop || ""].join("_"));
   };
 
   var points = function (list, transfer, times, base) {
@@ -201,7 +234,7 @@
       var t2 = Date.now();
       // Read only this trip's panel, so an earlier trip's panel can't answer for it.
       var root = (tab && tab.closest(".ant-tabs")) || card;
-      var times = await waitFor(function () { var t = shownTimes(root); return Object.keys(t).length ? t : null; }, 1500) || {};
+      var times = await waitFor(function () { var t = shownTimes(root); return Object.keys(t).length ? t : null; }, 800) || {};
       var t3 = Date.now();
       Object.keys(got).forEach(function (code) { if (before.indexOf(code) < 0) { timesByCode[code] = times; infoByCode[code] = info; } });
       b.click(); // close Details again
@@ -213,9 +246,9 @@
     var data = { v: 2, url: location.href, date: "", trips: [] };
     Object.keys(got).forEach(function (code) {
       var c = infoByCode[code] || {};
-      // The page data has no stop-list code; match its trip by departure time and fare.
-      var t = trips.filter(function (x) { return x.tripCode === code; })[0] ||
-        trips.filter(function (x) { return c.dep && hhmm(x.fromTime) === c.dep && (!c.fare || [x.fareLarge, x.fare, x.originalFare].indexOf(c.fare) >= 0); })[0] || {};
+      // The stop-list URL's code is the trip's tripCode (first page: __NEXT_DATA__; See more: the route API's
+      // route.schedules[0].trip_code). Only that match is trusted for the link.
+      var t = trips.filter(function (x) { return x.tripCode === code; })[0] || {};
       var d = got[code] || {};
       var shown = timesByCode[code] || {};
       // Derive the clock time of "duration 0" from any stop whose time is on screen, so the others get times too.
@@ -223,6 +256,13 @@
       (d.pickup_points || []).concat(d.drop_off_points || []).some(function (p) {
         var s = shown[p.english_name] || shown[p.name];
         if (s && p.duration != null) { var hm = s.split(":"); base = (+hm[0] * 60 + +hm[1] - p.duration + 1440) % 1440; return true; }
+      });
+      // Else use the card's departure/arrival stop (its name may be cut short).
+      if (base == null) (c.stops || []).some(function (st) {
+        var p = (d.pickup_points || []).concat(d.drop_off_points || []).filter(function (p) {
+          return st[1] && p.duration != null && [p.english_name, p.name].some(function (n) { return n && n.indexOf(st[1]) === 0; });
+        })[0];
+        if (p) { var hm = st[0].split(":"); base = (+hm[0] * 60 + +hm[1] - p.duration + 1440) % 1440; return true; }
       });
       data.date = data.date || t.departure_date || "";
       data.trips.push({
@@ -257,7 +297,7 @@
     var sec = function (ms) { return (ms / 1000 / buttons.length).toFixed(1); };
     say("完成：讀到 " + data.trips.length + " / " + buttons.length + " 班的上下車點，共 " + Math.round((Date.now() - start) / 1000) + " 秒（每班平均：等分頁 " + sec(spent[0]) + "、等資料 " + sec(spent[1]) + "、等時間 " + sec(spent[2]) + " 秒）。" +
       (!linked ? " 每班都找不到直接連結（欄位：" + Object.keys(trips[0] || {}).slice(0, 40).join(",") + "）" :
-        linked < data.trips.length ? " 有 " + (data.trips.length - linked) + " 班（See more 載入的）沒有直接連結，會回搜尋結果頁。" : ""));
+        linked < data.trips.length ? " 有 " + (data.trips.length - linked) + " 班沒有直接連結，會回搜尋結果頁。" : ""));
     btn.style.display = "block";
     btn.onclick = function () { window.open(url, "_blank"); };
     window.__vnbusRunning = false;
