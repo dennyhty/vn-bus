@@ -144,3 +144,8 @@ fieldset.range select { min-height: 34px; padding: 4px 6px; }
 .dot.pickup-t { background: #8fd19e; }
 .dot.dropoff-t { background: #f4a259; }
 .chip.main { background: var(--accent); color: #fff; border-color: var(--accent); }
+.chip { white-space: nowrap; }
+/* Leaflet popups are always white, so give chips fixed light colors there. */
+.leaflet-popup .chip { background: #eef1f5; color: #1c2430; border-color: #d0d6de; }
+.leaflet-popup .chip.main { background: #0b6bcb; color: #fff; border-color: #0b6bcb; }
+.note a { color: var(--accent); }
