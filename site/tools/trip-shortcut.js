@@ -1,6 +1,7 @@
 // iOS Shortcuts "Run JavaScript on Web Page" code. Run it from Safari's Share sheet on a Vexere trip
-// booking page (/ticketbooking/...). Reads the trip and its stops from the page's own data and opens
-// them in VN-BUS. Nothing is sent to a server: the data travels in the URL hash.
+// booking page (/ticketbooking/...). Reads the trip and its stops from the page's own data and
+// returns a VN-BUS link; the shortcut's "Open URLs" action opens it in a new tab, so the Vexere page
+// stays open. Nothing is sent to a server: the data travels in the URL hash.
 (function () {
   var SITE = "https://dennyhty.github.io/vn-bus/trip.html";
   try {
@@ -32,9 +33,8 @@
     var hash = btoa(unescape(encodeURIComponent(json))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
     var url = SITE + "#d=" + hash;
     completion(url);
-    location.href = url;
   } catch (e) {
     alert("VN-BUS：" + e.message);
-    completion("error: " + e.message);
+    completion("");
   }
 })();
