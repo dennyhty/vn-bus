@@ -138,3 +138,6 @@ fieldset.range select { min-height: 34px; padding: 4px 6px; }
 .gmaps { font-size: .8rem; color: var(--accent); white-space: nowrap; margin-left: 4px; }
 #mapSection { margin-top: 20px; }
 .hint { color: var(--warn); font-size: .8rem; min-height: 0; }
+.points .vi { display: block; color: var(--muted); font-size: .8rem; }
+.code { width: 100%; height: 180px; font: 12px ui-monospace, monospace; }
+.steps li { margin: 6px 0; }
