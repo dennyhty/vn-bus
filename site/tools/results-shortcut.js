@@ -219,6 +219,7 @@
       var b = buttons[i];
       var card = cardOf(b);
       var info = cardInfo(card);
+      info.idx = i;
       b.click();
       var t0 = Date.now();
       var tab = await waitFor(function () { return tabsIn(card).filter(isTab)[0]; }, 3000);
@@ -253,7 +254,11 @@
           (c.op && (x.busName || x.companyName || "").toLowerCase() === c.op.toLowerCase() ? 1 : 0);
       };
       same.sort(function (a, b) { return score(b) - score(a); });
-      var t = trips.filter(function (x) { return x.tripCode === code; })[0] || same[0] || {};
+      // Cards come in the same order as the page data (first page, then each See more page), so try the
+      // trip at the card's position first; otherwise the best match by time, fare and operator.
+      var atIdx = trips[c.idx];
+      var t = (atIdx && used.indexOf(atIdx) < 0 && hhmm(atIdx.fromTime) === c.dep ? atIdx : null) ||
+        trips.filter(function (x) { return x.tripCode === code; })[0] || same[0] || {};
       used.push(t);
       var d = got[code] || {};
       var shown = timesByCode[code] || {};
