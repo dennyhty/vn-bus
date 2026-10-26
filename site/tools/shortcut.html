@@ -13,6 +13,7 @@
   </header>
   <main>
     <div class="card">
+      <h3>一、單一班次（訂票頁）</h3>
       <ol class="steps">
         <li>「設定 → App → 捷徑 → 進階」，打開「允許執行腳本」。</li>
         <li>在「捷徑」新增捷徑，命名為「VN-BUS」。在捷徑設定打開「在分享表單中顯示」，類型只留「Safari 網頁」。</li>
@@ -21,25 +22,40 @@
         <li>再加一個動作「打開 URL」，網址選「JavaScript 結果」。這樣 VN-BUS 會開在新分頁，Vexere 的頁面不會被蓋掉，可以回去看別班車。</li>
         <li>在 Vexere 選好班車、進到訂票頁（可以選座位的那頁），按「分享」→「VN-BUS」。</li>
       </ol>
-      <p><button type="button" id="copy">複製程式碼</button> <span id="copied" class="muted"></span></p>
-      <textarea id="code" class="code" readonly></textarea>
-      <p class="note muted">程式只讀你已經打開的那一頁，把這班車的資料放在網址裡交給 VN-BUS，VN-BUS 不保存任何資料。</p>
+      <p><button type="button" data-copy="code1">複製程式碼</button> <span class="muted copied"></span></p>
+      <textarea id="code1" class="code" data-src="trip-shortcut.js" readonly></textarea>
     </div>
+    <div class="card">
+      <h3>二、整頁班次（搜尋結果頁）</h3>
+      <ol class="steps">
+        <li>再新增一個捷徑，命名為「VN-BUS 全部班次」，同樣打開「在分享表單中顯示」、只留「Safari 網頁」。</li>
+        <li>加入動作「在網頁上執行 JavaScript」，「網頁」選「捷徑輸入」，程式碼換成下面這段。這個捷徑<b>不用</b>加「打開 URL」。</li>
+        <li>在 Vexere 搜尋路線、選日期，看到班次列表後，在 Safari 網址列左邊的「大小」按鈕選「要求桌面版網站」（手機版頁面沒有 Details 按鈕）。</li>
+        <li>按「分享」→「VN-BUS 全部班次」。頁面下方會出現進度框，程式會一班一班幫你點開 Details（每班約 2 秒，請不要動頁面）。</li>
+        <li>完成後按「在 VN-BUS 打開（新分頁）」，就能看到所有班次，按「找離我最近的點」會依最近的上車點排序。</li>
+      </ol>
+      <p><button type="button" data-copy="code2">複製程式碼</button> <span class="muted copied"></span></p>
+      <textarea id="code2" class="code" data-src="results-shortcut.js" readonly></textarea>
+      <p class="note muted">目前只會讀到頁面一開始載入的班次（通常 20 班）。如果某班先前已經手動點開過 Details，可能會讀不到，重新整理頁面再跑即可。</p>
+    </div>
+    <p class="note muted">兩段程式都只讀你已經打開的頁面，不會另外向 Vexere 要資料；班次資料放在網址裡交給 VN-BUS，VN-BUS 不保存任何資料。</p>
   </main>
   <script>
-    (async () => {
-      const code = document.getElementById("code");
-      code.value = await (await fetch("trip-shortcut.js")).text();
-      document.getElementById("copy").addEventListener("click", async () => {
-        code.select();
+    document.querySelectorAll("textarea[data-src]").forEach(async (ta) => {
+      ta.value = await (await fetch(ta.dataset.src)).text();
+    });
+    document.querySelectorAll("button[data-copy]").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        const ta = document.getElementById(btn.dataset.copy);
+        ta.select();
         try {
-          await navigator.clipboard.writeText(code.value);
+          await navigator.clipboard.writeText(ta.value);
         } catch {
           document.execCommand("copy");
         }
-        document.getElementById("copied").textContent = "已複製";
-      });
-    })();
+        btn.nextElementSibling.textContent = "已複製";
+      }),
+    );
   </script>
 </body>
 </html>

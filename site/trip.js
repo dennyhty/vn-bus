@@ -41,34 +41,72 @@
     return;
   }
 
-  const toPoint = (kind) => ([name, addr, time, lat, lon, surcharge, transfer]) => ({ kind, name, addr, time, lat, lon, surcharge, transfer });
-  const picks = data.p.map(toPoint("pickup"));
-  const drops = data.d.map(toPoint("dropoff"));
-  const all = [...picks, ...drops];
-  // Vexere gives ISO timestamps ("2026-10-28T13:30:00+07:00"); show just the clock time.
-  const hhmm = (t) => /T(\d{2}:\d{2})/.exec(t || "")?.[1] || t;
-  // Transfer points are served by a shuttle. The bus itself departs from the non-transfer pickup at
-  // the trip's departure time and arrives at the non-transfer drop-off at its arrival time; without a
-  // time match, fall back to the first non-transfer pickup and the last non-transfer drop-off (the bus
-  // may let people off at roadside stops before its final station).
-  const own = (points) => points.filter((p) => !p.transfer);
-  const at = (points, t) => own(points).find((p) => p.time && p.time === hhmm(t));
-  const depart = at(picks, data.dep) || own(picks)[0];
-  const arrive = at(drops, data.arr) || own(drops).at(-1);
-  const COLORS = { pickup: ["#1a9b5a", "#8fd19e"], dropoff: ["#d64545", "#f4a259"] };
-  const color = (p) => COLORS[p.kind][p.transfer ? 1 : 0];
-  const tag = (p) => (p === depart ? "發車點" : p === arrive ? "到站點" : p.transfer ? "接駁" : "");
+  // One trip (v1, from tools/trip-shortcut.js) or a whole results page (v2, tools/results-shortcut.js).
+  const trips = (data.trips || [data]).map(prepTrip);
+  let cur = trips[0];
   let me = null;
 
+  // Vexere gives ISO timestamps ("2026-10-28T13:30:00+07:00"); show just the clock time.
+  function hhmm(t) {
+    return /T(\d{2}:\d{2})/.exec(t || "")?.[1] || t;
+  }
+
+  function prepTrip(t) {
+    const toPoint = (kind) => ([name, addr, time, lat, lon, surcharge, transfer]) => ({ kind, name, addr, time, lat, lon, surcharge, transfer });
+    const picks = t.p.map(toPoint("pickup"));
+    const drops = t.d.map(toPoint("dropoff"));
+    // Transfer points are served by a shuttle. The bus itself departs from the non-transfer pickup at
+    // the trip's departure time and arrives at the non-transfer drop-off at its arrival time; without a
+    // time match, fall back to the first non-transfer pickup and the last non-transfer drop-off (the bus
+    // may let people off at roadside stops before its final station).
+    const own = (points) => points.filter((p) => !p.transfer);
+    const at = (points, time) => own(points).find((p) => p.time && p.time === hhmm(time));
+    return {
+      ...t,
+      picks,
+      drops,
+      all: [...picks, ...drops],
+      depart: at(picks, t.dep) || own(picks)[0],
+      arrive: at(drops, t.arr) || own(drops).at(-1),
+    };
+  }
+
+  const COLORS = { pickup: ["#1a9b5a", "#8fd19e"], dropoff: ["#d64545", "#f4a259"] };
+  const color = (p) => COLORS[p.kind][p.transfer ? 1 : 0];
+  const tag = (p) => (p === cur.depart ? "發車點" : p === cur.arrive ? "到站點" : p.transfer ? "接駁" : "");
+  const nearest = (points) => (me ? points.filter((p) => p.lat).sort((a, b) => km(me, a) - km(me, b))[0] : null);
+  const backUrl = (t) => (/^https:\/\/([a-z0-9-]+\.)?vexere\.com\//.test(t.url || data.url || "") ? t.url || data.url : "");
+
   // ---------- trip summary ----------
-  $("trip").hidden = false;
-  $("tripTimes").textContent = [hhmm(data.dep), hhmm(data.arr)].filter(Boolean).join(" → ");
-  $("tripFare").textContent = vnd(data.fare);
-  $("tripOp").textContent = data.op;
-  $("tripMeta").textContent = [data.date, data.veh, data.seats != null && `剩 ${data.seats} 位`].filter(Boolean).join("｜");
-  if (/^https:\/\/([a-z0-9-]+\.)?vexere\.com\//.test(data.url || "")) $("back").href = data.url;
-  else $("back").hidden = true;
-  document.title = `${data.op} ${hhmm(data.dep)}｜班次停靠點`;
+  function showSummary() {
+    $("trip").hidden = false;
+    $("tripTimes").textContent = [hhmm(cur.dep), hhmm(cur.arr)].filter(Boolean).join(" → ");
+    $("tripFare").textContent = vnd(cur.fare);
+    $("tripOp").textContent = cur.op;
+    $("tripMeta").textContent = [cur.date || data.date, cur.veh, cur.seats != null && `剩 ${cur.seats} 位`].filter(Boolean).join("｜");
+    $("back").hidden = !backUrl(cur);
+    $("back").href = backUrl(cur) || "#";
+    $("back").textContent = trips.length > 1 ? "回 Vexere 搜尋結果" : "回 Vexere 訂這班車";
+    document.title = `${cur.op} ${hhmm(cur.dep)}｜班次停靠點`;
+  }
+
+  // ---------- trip list (results page) ----------
+  function renderTripList() {
+    if (trips.length < 2) return;
+    $("tripsCard").hidden = false;
+    const rows = trips.map((t, i) => ({ t, i, np: nearest(t.picks) }));
+    if (me) rows.sort((a, b) => (a.np ? km(me, a.np) : 1e9) - (b.np ? km(me, b.np) : 1e9));
+    $("tripsNote").textContent = me ? "依離你最近的上車點排序。" : `共 ${trips.length} 班。按「找離我最近的點」可依最近的上車點排序。`;
+    $("tripList").innerHTML = rows
+      .map(
+        ({ t, i, np }) =>
+          `<li data-t="${i}" class="${t === cur ? "sel" : ""}"><b>${esc(hhmm(t.dep))} → ${esc(hhmm(t.arr))}</b> ${esc(t.op)} <span class="fare">${vnd(t.fare)}</span>` +
+          `<span class="meta">${[t.veh, t.seats != null && `剩 ${t.seats} 位`, `${t.p.length} 個上車點`].filter(Boolean).map(esc).join("｜")}</span>` +
+          (np ? `<span class="meta">最近上車：${esc(np.time)} ${esc(np.name)}（${fmtKm(km(me, np))}）</span>` : "") +
+          `</li>`,
+      )
+      .join("");
+  }
 
   // ---------- map ----------
   $("mapCard").hidden = false;
@@ -89,10 +127,10 @@
     if (!map) return;
     layers.clearLayers();
     const bounds = [];
-    all.forEach((p) => {
+    cur.all.forEach((p) => {
       if (!p.lat) return;
       p.marker = L.circleMarker([p.lat, p.lon], {
-        radius: p === depart || p === arrive ? 11 : p.transfer ? 7 : 8,
+        radius: p === cur.depart || p === cur.arrive ? 11 : p.transfer ? 7 : 8,
         color: "#fff",
         weight: 2,
         fillColor: color(p),
@@ -115,16 +153,16 @@
         .map((p) => ({ p, d: me && p.lat ? km(me, p) : null }))
         .map(
           ({ p, d }) =>
-            `<li data-i="${all.indexOf(p)}">${label(p)}${d != null ? `<span class="dist">${fmtKm(d)}</span>` : ""} ${gmapsLink(p)}<span class="vi">${esc(p.addr)}</span></li>`,
+            `<li data-i="${cur.all.indexOf(p)}">${label(p)}${d != null ? `<span class="dist">${fmtKm(d)}</span>` : ""} ${gmapsLink(p)}<span class="vi">${esc(p.addr)}</span></li>`,
         )
         .join("");
-    $("pickList").innerHTML = list(picks);
-    $("dropList").innerHTML = list(drops);
+    $("pickList").innerHTML = list(cur.picks);
+    $("dropList").innerHTML = list(cur.drops);
+    renderTripList();
 
     if (me) {
-      const nearest = (points) => points.filter((p) => p.lat).sort((a, b) => km(me, a) - km(me, b))[0];
-      const np = nearest(picks);
-      const nd = nearest(drops);
+      const np = nearest(cur.picks);
+      const nd = nearest(cur.drops);
       $("nearest").textContent = [np && `最近的上車點：${np.time} ${np.name}（${fmtKm(km(me, np))}）`, nd && `最近的下車點：${nd.time} ${nd.name}（${fmtKm(km(me, nd))}）`]
         .filter(Boolean)
         .join("　");
@@ -134,7 +172,7 @@
   document.querySelector(".points").addEventListener("click", (e) => {
     if (e.target.closest("a")) return;
     const li = e.target.closest("li[data-i]");
-    const p = li && all[li.dataset.i];
+    const p = li && cur.all[li.dataset.i];
     if (!p?.marker) return;
     map.setView(p.marker.getLatLng(), 15);
     p.marker.openPopup();
@@ -159,5 +197,15 @@
     );
   });
 
+  $("tripList").addEventListener("click", (e) => {
+    const li = e.target.closest("li[data-t]");
+    if (!li) return;
+    cur = trips[li.dataset.t];
+    showSummary();
+    render(false);
+    $("trip").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  showSummary();
   render(false);
 })();
