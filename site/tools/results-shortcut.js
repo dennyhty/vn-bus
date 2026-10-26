@@ -66,9 +66,9 @@
   }
 
   // The panel shows each stop as "16:40 • Tan Dien Roundabout"; read those times from what is on screen.
-  var shownTimes = function () {
+  var shownTimes = function (root) {
     var out = {};
-    document.querySelectorAll(".ant-tabs-tabpane-active").forEach(function (pane) {
+    (root || document).querySelectorAll(".ant-tabs-tabpane-active").forEach(function (pane) {
       (pane.innerText || "").split("\n").forEach(function (line) {
         var m = /^\s*(\d{1,2}:\d{2})\s*[•·]\s*(.+?)\s*$/.exec(line);
         if (m) out[m[2]] = hhmm(m[1]);
@@ -93,6 +93,9 @@
 
   (async function () {
     var timesByCode = {};
+    var usedTabs = [];
+    var spent = [0, 0, 0]; // ms waiting for: the tab, the stop list, the shown times
+    var start = Date.now();
     for (var i = 0; i < buttons.length; i++) {
       if (!document.body.contains(box)) return;
       say("讀取第 " + (i + 1) + " / " + buttons.length + " 班的上下車點…");
@@ -101,15 +104,26 @@
       b.scrollIntoView({ block: "center" });
       b.click();
       var card = b.closest("[class*='ticket']") || b.parentElement.parentElement;
+      var isTab = function (n) { return /Pick-up\/Drop-off|Điểm đón/i.test(n.textContent); };
+      var t0 = Date.now();
       var tab = await waitFor(function () {
-        return Array.prototype.slice.call((card || document).querySelectorAll(".ant-tabs-tab")).filter(function (n) { return /Pick-up\/Drop-off|Điểm đón/i.test(n.textContent); })[0];
+        var own = Array.prototype.slice.call(card.querySelectorAll(".ant-tabs-tab")).filter(isTab)[0];
+        if (own) return own;
+        // Card guess missed: take the visible Pick-up/Drop-off tab no earlier trip used.
+        return Array.prototype.slice.call(document.querySelectorAll(".ant-tabs-tab")).filter(function (n) { return isTab(n) && n.offsetParent && usedTabs.indexOf(n) < 0; })[0];
       }, 3000);
-      if (tab) tab.click();
+      var t1 = Date.now();
+      if (tab) { usedTabs.push(tab); tab.click(); }
       await waitFor(function () { return Object.keys(got).length > before.length; }, 6000);
-      var times = await waitFor(function () { var t = shownTimes(); return Object.keys(t).length ? t : null; }, 1500) || {};
+      var t2 = Date.now();
+      // Read only this trip's panel, so an earlier trip's panel can't answer for it.
+      var root = (tab && tab.closest(".ant-tabs")) || card;
+      var times = await waitFor(function () { var t = shownTimes(root); return Object.keys(t).length ? t : null; }, 1500) || {};
+      var t3 = Date.now();
       Object.keys(got).forEach(function (code) { if (before.indexOf(code) < 0) timesByCode[code] = times; });
       b.click(); // close Details again
-      await waitFor(function () { return !Object.keys(shownTimes()).length; }, 1000);
+      await sleep(150);
+      spent[0] += t1 - t0; spent[1] += t2 - t1; spent[2] += t3 - t2;
     }
 
     // Match each received stop list to its trip by trip code.
@@ -152,7 +166,8 @@
         url = SITE + "#z=" + b64(new Uint8Array(buf));
       } catch (e) {}
     }
-    say("完成：讀到 " + data.trips.length + " / " + buttons.length + " 班的上下車點。");
+    var sec = function (ms) { return (ms / 1000 / buttons.length).toFixed(1); };
+    say("完成：讀到 " + data.trips.length + " / " + buttons.length + " 班的上下車點，共 " + Math.round((Date.now() - start) / 1000) + " 秒（每班平均：等分頁 " + sec(spent[0]) + "、等資料 " + sec(spent[1]) + "、等時間 " + sec(spent[2]) + " 秒）。");
     btn.style.display = "block";
     btn.onclick = function () { window.open(url, "_blank"); };
     window.__vnbusRunning = false;
