@@ -40,8 +40,15 @@
   var got = {};
   var keep = function (url, text) {
     var m = /\/trip\/([^/?]+)\/pickup_dropoff_points/.exec(url || "");
-    if (!m) return;
-    try { got[m[1]] = JSON.parse(text).data; } catch (e) {}
+    if (m) { try { got[m[1]] = JSON.parse(text).data; } catch (e) {} return; }
+    // A "See more" page of trips: keep the trips (they carry the id the pinned_trips link needs).
+    var walk = function (v) {
+      if (Array.isArray(v)) {
+        if (v.length && v[0] && v[0].fromTime && v[0].id) v.forEach(function (x) { if (!trips.some(function (y) { return y.id === x.id; })) trips.push(x); });
+        else v.forEach(walk);
+      } else if (v && typeof v === "object") Object.keys(v).forEach(function (k) { walk(v[k]); });
+    };
+    try { walk(JSON.parse(text)); } catch (e) {}
   };
   // Shortcuts runs this code in its own copy of window, so hooking XMLHttpRequest here would not see the
   // page's requests. Put the hook in the page with a <script> tag; it hands each stop list back through a
@@ -50,7 +57,7 @@
     if (window.__vnbusHook) return;
     window.__vnbusHook = true;
     var hand = function (url, text) {
-      if (!/pickup_dropoff_points/.test(url || "")) return;
+      if (!/pickup_dropoff_points/.test(url || "") && !/"fromTime"/.test(text || "")) return;
       var el = document.createElement("script");
       el.type = "application/json";
       el.setAttribute("data-vnbus", url);
@@ -66,7 +73,7 @@
     window.fetch = function (input) {
       return xfetch.apply(this, arguments).then(function (res) {
         var url = typeof input === "string" ? input : input && input.url;
-        if (/pickup_dropoff_points/.test(url || "")) res.clone().text().then(function (t) { hand(url, t); });
+        if (/json/.test(res.headers.get("content-type") || "")) res.clone().text().then(function (t) { hand(url, t); });
         return res;
       });
     };
@@ -109,7 +116,7 @@
       var m = /^(\d{1,2}:\d{2})\s*[•·]?\s*(.*)$/.exec(l);
       if (!m || /\d{2}-\d{2}-\d{4}/.test(l)) return;
       var name = m[2];
-      for (var j = i + 1; !name && j < lines.length && j <= i + 2; j++) if (!/^[•·]$/.test(lines[j]) && !/^\d/.test(lines[j])) name = lines[j];
+      for (var j = i + 1; !name && j < lines.length && j <= i + 3; j++) if (!/^[•·]$|^\d|shuttle|đưa đón|trung chuyển/i.test(lines[j])) name = lines[j];
       out.push([hhmm(m[1]), (name || "").replace(/\s*(\.\.\.|…)$/, "")]);
     });
     return out;
@@ -144,7 +151,10 @@
   // ?pinned_trips=<trip id>_<YYYY-MM-DD>_<HH:MM>_<pickup id>_<drop-off id>.
   var pinUrl = function (t, d, dep) {
     var id = t.id || t.tripId || t.trip_id;
-    var dm = /(\d{2})-(\d{2})-(\d{4})/.exec(t.departure_date || new URLSearchParams(location.search).get("date") || "");
+    // The page's ?date= is DD-MM-YYYY; the trip's departure_date is ISO ("2026-10-28T00:00:00+07:00").
+    var dm = /(\d{2})-(\d{2})-(\d{4})/.exec(new URLSearchParams(location.search).get("date") || "");
+    var iso = /(\d{4})-(\d{2})-(\d{2})/.exec(t.departure_date || "");
+    if (!dm && iso) dm = [iso[0], iso[3], iso[2], iso[1]];
     var pid = function (list, last) {
       var l = (list || []).filter(function (p) { return !p.hidden; });
       var p = last ? l[l.length - 1] : l[0];
@@ -284,7 +294,7 @@
     var sec = function (ms) { return (ms / 1000 / buttons.length).toFixed(1); };
     say("完成：讀到 " + data.trips.length + " / " + buttons.length + " 班的上下車點，共 " + Math.round((Date.now() - start) / 1000) + " 秒（每班平均：等分頁 " + sec(spent[0]) + "、等資料 " + sec(spent[1]) + "、等時間 " + sec(spent[2]) + " 秒）。" +
       (!linked ? " 每班都找不到直接連結（欄位：" + Object.keys(trips[0] || {}).slice(0, 40).join(",") + "）" :
-        linked < data.trips.length ? " 有 " + (data.trips.length - linked) + " 班（See more 載入的）沒有直接連結，會回搜尋結果頁。" : ""));
+        linked < data.trips.length ? " 有 " + (data.trips.length - linked) + " 班沒有直接連結，會回搜尋結果頁。" : ""));
     btn.style.display = "block";
     btn.onclick = function () { window.open(url, "_blank"); };
     window.__vnbusRunning = false;
