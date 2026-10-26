@@ -10,10 +10,15 @@
 <body>
   <header>
     <h1>班次停靠點</h1>
-    <p class="sub">資料來自你在 Vexere 打開的訂票頁，用捷徑放在網址裡帶過來，VN-BUS 不保存任何資料。站名是 Vexere 上的越南文原名。</p>
+    <p class="sub">資料來自你在 Vexere 打開的訂票頁，用捷徑放在網址裡帶過來，VN-BUS 不保存任何資料。整頁班次的站名是 Vexere 的英文名，單一班次是越南文原名；地址都是越南文。</p>
   </header>
   <main>
     <div id="status" class="status"></div>
+    <section id="tripsCard" class="card" hidden>
+      <h3>這次搜尋的班次</h3>
+      <p id="tripsNote" class="note muted"></p>
+      <ol id="tripList" class="trip-list"></ol>
+    </section>
     <section id="trip" class="card" hidden>
       <div class="trip-top">
         <div class="times" id="tripTimes"></div>

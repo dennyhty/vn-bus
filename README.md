@@ -20,7 +20,7 @@ Vexere 的即時班次只在「帶日期」的頁面和需要授權的 API 裡�
 
 ## 單一班次的上下車點（iPhone 捷徑）
 
-Vexere 訂票頁（可以選座位的那頁）的資料裡有這班車所有上下車點、時間、座標與加價。`site/tools/trip-shortcut.js` 是一段 iOS 捷徑「在網頁上執行 JavaScript」用的程式：在訂票頁按「分享」執行，它只讀這一頁已載入的資料，放進網址的 `?d=` 打開 `trip.html`（捷徑的「打開 URL」會丟掉 `#` 後面的部分）。設定步驟在 `tools/shortcut.html`。
+Vexere 訂票頁（可以選座位的那頁）的資料裡有這班車所有上下車點、時間、座標與加價。`site/tools/trip-shortcut.js` 是一段 iOS 捷徑「在網頁上執行 JavaScript」用的程式：在訂票頁按「分享」執行，它只讀這一頁已載入的資料，放進網址的 `?d=` 打開 `trip.html`（捷徑的「打開 URL」會丟掉 `#` 後面的部分）。在搜尋結果頁（桌面版版面）則可用 `site/tools/results-shortcut.js`：它像人一樣依序點開每班的 Details → Pick-up/Drop-off，收下頁面自己收到的停靠點資料（含英文站名與座標），最後在新分頁用 `trip.html` 一次顯示所有班次。設定步驟在 `tools/shortcut.html`。
 
 ## 設定步驟
 

@@ -149,3 +149,7 @@ fieldset.range select { min-height: 34px; padding: 4px 6px; }
 .leaflet-popup .chip { background: #eef1f5; color: #1c2430; border-color: #d0d6de; }
 .leaflet-popup .chip.main { background: #0b6bcb; color: #fff; border-color: #0b6bcb; }
 .note a { color: var(--accent); }
+.trip-list { padding-left: 1.4em; margin: 0; }
+.trip-list li { cursor: pointer; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.trip-list li.sel { color: var(--accent); }
+.trip-list .meta { display: block; font-size: .85rem; }
