@@ -55,13 +55,15 @@
 
   // ---------- trip summary ----------
   $("trip").hidden = false;
-  $("tripTimes").textContent = [data.dep, data.arr].filter(Boolean).join(" → ");
+  // Vexere gives ISO timestamps ("2026-10-28T13:30:00+07:00"); show just the clock time.
+  const hhmm = (t) => /T(\d{2}:\d{2})/.exec(t || "")?.[1] || t;
+  $("tripTimes").textContent = [hhmm(data.dep), hhmm(data.arr)].filter(Boolean).join(" → ");
   $("tripFare").textContent = vnd(data.fare);
   $("tripOp").textContent = data.op;
   $("tripMeta").textContent = [data.date, data.veh, data.seats != null && `剩 ${data.seats} 位`].filter(Boolean).join("｜");
   if (/^https:\/\/([a-z0-9-]+\.)?vexere\.com\//.test(data.url || "")) $("back").href = data.url;
   else $("back").hidden = true;
-  document.title = `${data.op} ${data.dep}｜班次停靠點`;
+  document.title = `${data.op} ${hhmm(data.dep)}｜班次停靠點`;
 
   // ---------- map ----------
   $("mapCard").hidden = false;
