@@ -114,8 +114,6 @@
     });
     return { op: words[0] || "", veh: words[1] || "", dep: (stops[0] || [])[0] || "", arr: (stops[1] || [])[0] || "", fare: fare, seats: seats };
   };
-  // Close any Details left open, so each click below opens its trip.
-  buttons.forEach(function (b) { if (tabsIn(cardOf(b)).length) b.click(); });
 
   // The panel shows each stop as "16:40 • Tan Dien Roundabout"; read those times from what is on screen.
   var shownTimes = function (root) {
@@ -162,6 +160,22 @@
   };
 
   (async function () {
+    // Press "See more" until every trip is on the page (it disappears, or stops adding trips).
+    var count = function () { return document.querySelectorAll("button.btn-detail").length; };
+    for (var more = 0; more < 30; more++) {
+      var seeMore = Array.prototype.slice.call(document.querySelectorAll("button, a, div[role=button]")).filter(function (n) {
+        return /^\s*(See more|Xem thêm)\s*$/i.test(n.textContent) && n.offsetParent && !n.disabled;
+      })[0];
+      if (!seeMore) break;
+      var had = count();
+      say("載入更多班次…（目前 " + had + " 班）");
+      seeMore.click();
+      if (!(await waitFor(function () { return count() > had; }, 6000))) break;
+    }
+    buttons = Array.prototype.slice.call(document.querySelectorAll("button.btn-detail"));
+    // Close any Details left open, so each click below opens its trip.
+    buttons.forEach(function (b) { if (tabsIn(cardOf(b)).length) b.click(); });
+
     var timesByCode = {};
     var infoByCode = {};
     var spent = [0, 0, 0]; // ms waiting for: the tab, the stop list, the shown times
@@ -242,7 +256,8 @@
     var linked = data.trips.filter(function (x) { return x.url; }).length;
     var sec = function (ms) { return (ms / 1000 / buttons.length).toFixed(1); };
     say("完成：讀到 " + data.trips.length + " / " + buttons.length + " 班的上下車點，共 " + Math.round((Date.now() - start) / 1000) + " 秒（每班平均：等分頁 " + sec(spent[0]) + "、等資料 " + sec(spent[1]) + "、等時間 " + sec(spent[2]) + " 秒）。" +
-      (linked < data.trips.length ? " 有 " + (data.trips.length - linked) + " 班找不到直接連結（欄位：" + Object.keys(trips[0] || {}).slice(0, 40).join(",") + "）" : ""));
+      (!linked ? " 每班都找不到直接連結（欄位：" + Object.keys(trips[0] || {}).slice(0, 40).join(",") + "）" :
+        linked < data.trips.length ? " 有 " + (data.trips.length - linked) + " 班（See more 載入的）沒有直接連結，會回搜尋結果頁。" : ""));
     btn.style.display = "block";
     btn.onclick = function () { window.open(url, "_blank"); };
     window.__vnbusRunning = false;
