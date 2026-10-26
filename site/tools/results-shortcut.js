@@ -43,19 +43,46 @@
     if (!m) return;
     try { got[m[1]] = JSON.parse(text).data; } catch (e) {}
   };
-  var xopen = XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.open = function (method, url) {
-    this.addEventListener("load", function () { keep(String(url), this.responseText); });
-    return xopen.apply(this, arguments);
+  // Shortcuts runs this code in its own copy of window, so hooking XMLHttpRequest here would not see the
+  // page's requests. Put the hook in the page with a <script> tag; it hands each stop list back through a
+  // hidden element, since the page and this code share the DOM.
+  var hook = function () {
+    if (window.__vnbusHook) return;
+    window.__vnbusHook = true;
+    var hand = function (url, text) {
+      if (!/pickup_dropoff_points/.test(url || "")) return;
+      var el = document.createElement("script");
+      el.type = "application/json";
+      el.setAttribute("data-vnbus", url);
+      el.textContent = text;
+      document.documentElement.appendChild(el);
+    };
+    var xopen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function (method, url) {
+      this.addEventListener("load", function () { hand(String(url), this.responseText); });
+      return xopen.apply(this, arguments);
+    };
+    var xfetch = window.fetch;
+    window.fetch = function (input) {
+      return xfetch.apply(this, arguments).then(function (res) {
+        var url = typeof input === "string" ? input : input && input.url;
+        if (/pickup_dropoff_points/.test(url || "")) res.clone().text().then(function (t) { hand(url, t); });
+        return res;
+      });
+    };
+    document.documentElement.setAttribute("data-vnbus-hook", "1");
   };
-  var xfetch = window.fetch;
-  window.fetch = function (input) {
-    return xfetch.apply(this, arguments).then(function (res) {
-      var url = typeof input === "string" ? input : input && input.url;
-      if (/pickup_dropoff_points/.test(url || "")) res.clone().text().then(function (t) { keep(url, t); });
-      return res;
+  var tag = document.createElement("script");
+  tag.textContent = "(" + hook + ")();";
+  document.documentElement.appendChild(tag);
+  tag.remove();
+  if (document.documentElement.getAttribute("data-vnbus-hook") !== "1") hook(); // page refused the tag: hook here instead
+  setInterval(function () {
+    document.querySelectorAll("script[data-vnbus]").forEach(function (el) {
+      keep(el.getAttribute("data-vnbus"), el.textContent);
+      el.remove();
     });
-  };
+  }, 100);
 
   var trips = [];
   try { trips = JSON.parse(document.getElementById("__NEXT_DATA__").textContent).props.initialState.routeReducer.trips || []; } catch (e) {}
