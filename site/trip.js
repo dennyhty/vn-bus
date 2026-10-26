@@ -43,11 +43,16 @@
   const picks = data.p.map(toPoint("pickup"));
   const drops = data.d.map(toPoint("dropoff"));
   const all = [...picks, ...drops];
-  // Transfer points are served by a shuttle; the first non-transfer point is where the bus itself
-  // departs (pickups) or arrives (drop-offs).
-  const main = (points) => points.find((p) => !p.transfer);
-  const depart = main(picks);
-  const arrive = main(drops);
+  // Vexere gives ISO timestamps ("2026-10-28T13:30:00+07:00"); show just the clock time.
+  const hhmm = (t) => /T(\d{2}:\d{2})/.exec(t || "")?.[1] || t;
+  // Transfer points are served by a shuttle. The bus itself departs from the non-transfer pickup at
+  // the trip's departure time and arrives at the non-transfer drop-off at its arrival time; without a
+  // time match, fall back to the first non-transfer pickup and the last non-transfer drop-off (the bus
+  // may let people off at roadside stops before its final station).
+  const own = (points) => points.filter((p) => !p.transfer);
+  const at = (points, t) => own(points).find((p) => p.time && p.time === hhmm(t));
+  const depart = at(picks, data.dep) || own(picks)[0];
+  const arrive = at(drops, data.arr) || own(drops).at(-1);
   const COLORS = { pickup: ["#1a9b5a", "#8fd19e"], dropoff: ["#d64545", "#f4a259"] };
   const color = (p) => COLORS[p.kind][p.transfer ? 1 : 0];
   const tag = (p) => (p === depart ? "發車點" : p === arrive ? "到站點" : p.transfer ? "接駁" : "");
@@ -55,8 +60,6 @@
 
   // ---------- trip summary ----------
   $("trip").hidden = false;
-  // Vexere gives ISO timestamps ("2026-10-28T13:30:00+07:00"); show just the clock time.
-  const hhmm = (t) => /T(\d{2}:\d{2})/.exec(t || "")?.[1] || t;
   $("tripTimes").textContent = [hhmm(data.dep), hhmm(data.arr)].filter(Boolean).join(" → ");
   $("tripFare").textContent = vnd(data.fare);
   $("tripOp").textContent = data.op;
