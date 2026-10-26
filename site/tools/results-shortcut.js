@@ -92,6 +92,31 @@
     return;
   }
 
+  // A trip's card is the largest box around its Details button that holds no other trip.
+  var cardOf = function (b) {
+    var n = b;
+    while (n.parentElement && n.parentElement !== document.body && n.parentElement.querySelectorAll("button.btn-detail").length === 1) n = n.parentElement;
+    return n;
+  };
+  var isTab = function (n) { return /Pick-up\/Drop-off|Điểm đón/i.test(n.textContent); };
+  var tabsIn = function (card) { return Array.prototype.slice.call(card.querySelectorAll(".ant-tabs-tab")).filter(function (n) { return n.offsetParent; }); };
+  // What the card shows: "Phương Trang ★4.9 (5302)", "Limousine sleeping bus", "17:20 • Bến xe Bình Minh",
+  // "20:40 • Bến xe Ga", "220,000 VND", "33 seats left". Read with Details closed.
+  var cardInfo = function (card) {
+    var lines = (card.innerText || "").split("\n").map(function (x) { return x.trim(); }).filter(Boolean);
+    var stops = [], fare = 0, seats = null, words = [];
+    lines.forEach(function (l) {
+      var m;
+      if ((m = /^(\d{1,2}:\d{2})\s*[•·]\s*(.+)$/.exec(l))) stops.push([hhmm(m[1]), m[2]]);
+      else if (!fare && (m = /^([\d.,]+)\s*(VND|đ|₫)/i.exec(l))) fare = +m[1].replace(/[.,]/g, "");
+      else if ((m = /^(\d+)\s*(seats? left|chỗ trống)/i.exec(l))) seats = +m[1];
+      else if (!/^\d|^★|details|book|call|^\*|belongs|thuộc|instant|free|shuttle|live|no prepayment|\d+h\d*m?$/i.test(l)) words.push(l.replace(/\s*★.*$/, ""));
+    });
+    return { op: words[0] || "", veh: words[1] || "", dep: (stops[0] || [])[0] || "", arr: (stops[1] || [])[0] || "", fare: fare, seats: seats };
+  };
+  // Close any Details left open, so each click below opens its trip.
+  buttons.forEach(function (b) { if (tabsIn(cardOf(b)).length) b.click(); });
+
   // The panel shows each stop as "16:40 • Tan Dien Roundabout"; read those times from what is on screen.
   var shownTimes = function (root) {
     var out = {};
@@ -102,6 +127,24 @@
       });
     });
     return out;
+  };
+
+  // Vexere's own share link opens the results page with this trip pinned (and the app, on a phone):
+  // ?pinned_trips=<trip id>_<YYYY-MM-DD>_<HH:MM>_<pickup id>_<drop-off id>.
+  var pinUrl = function (t, d, dep) {
+    var id = t.id || t.tripId || t.trip_id;
+    var dm = /(\d{2})-(\d{2})-(\d{4})/.exec(t.departure_date || new URLSearchParams(location.search).get("date") || "");
+    var pid = function (list, last) {
+      var l = (list || []).filter(function (p) { return !p.hidden; });
+      var p = last ? l[l.length - 1] : l[0];
+      return p && (p.id || p.point_id);
+    };
+    var pick = pid(d.pickup_points), drop = pid(d.drop_off_points, true);
+    if (!id || !dm || !dep) return "";
+    var u = new URL(location.href);
+    u.searchParams.delete("pinned_trips");
+    u.hash = "";
+    return u.href + (u.search ? "&" : "?") + "pinned_trips=" + [id, dm[3] + "-" + dm[2] + "-" + dm[1], dep, pick || "", drop || ""].join("_");
   };
 
   var points = function (list, transfer, times, base) {
@@ -120,7 +163,7 @@
 
   (async function () {
     var timesByCode = {};
-    var usedTabs = [];
+    var infoByCode = {};
     var spent = [0, 0, 0]; // ms waiting for: the tab, the stop list, the shown times
     var start = Date.now();
     for (var i = 0; i < buttons.length; i++) {
@@ -128,26 +171,25 @@
       say("讀取第 " + (i + 1) + " / " + buttons.length + " 班的上下車點…");
       var before = Object.keys(got);
       var b = buttons[i];
-      b.scrollIntoView({ block: "center" });
+      var card = cardOf(b);
+      var info = cardInfo(card);
       b.click();
-      var card = b.closest("[class*='ticket']") || b.parentElement.parentElement;
-      var isTab = function (n) { return /Pick-up\/Drop-off|Điểm đón/i.test(n.textContent); };
       var t0 = Date.now();
-      var tab = await waitFor(function () {
-        var own = Array.prototype.slice.call(card.querySelectorAll(".ant-tabs-tab")).filter(isTab)[0];
-        if (own) return own;
-        // Card guess missed: take the visible Pick-up/Drop-off tab no earlier trip used.
-        return Array.prototype.slice.call(document.querySelectorAll(".ant-tabs-tab")).filter(function (n) { return isTab(n) && n.offsetParent && usedTabs.indexOf(n) < 0; })[0];
-      }, 3000);
+      var tab = await waitFor(function () { return tabsIn(card).filter(isTab)[0]; }, 3000);
       var t1 = Date.now();
-      if (tab) { usedTabs.push(tab); tab.click(); }
+      if (tab && /active/.test(tab.className)) {
+        // Already on Pick-up/Drop-off: step to another tab and back so the page loads it again.
+        var other = tabsIn(card).filter(function (n) { return n !== tab; })[0];
+        if (other) { other.click(); await sleep(100); }
+      }
+      if (tab) tab.click();
       await waitFor(function () { return Object.keys(got).length > before.length; }, 6000);
       var t2 = Date.now();
       // Read only this trip's panel, so an earlier trip's panel can't answer for it.
       var root = (tab && tab.closest(".ant-tabs")) || card;
       var times = await waitFor(function () { var t = shownTimes(root); return Object.keys(t).length ? t : null; }, 1500) || {};
       var t3 = Date.now();
-      Object.keys(got).forEach(function (code) { if (before.indexOf(code) < 0) timesByCode[code] = times; });
+      Object.keys(got).forEach(function (code) { if (before.indexOf(code) < 0) { timesByCode[code] = times; infoByCode[code] = info; } });
       b.click(); // close Details again
       await sleep(150);
       spent[0] += t1 - t0; spent[1] += t2 - t1; spent[2] += t3 - t2;
@@ -156,7 +198,10 @@
     // Match each received stop list to its trip by trip code.
     var data = { v: 2, url: location.href, date: "", trips: [] };
     Object.keys(got).forEach(function (code) {
-      var t = trips.filter(function (x) { return x.tripCode === code; })[0] || {};
+      var c = infoByCode[code] || {};
+      // The page data has no stop-list code; match its trip by departure time and fare.
+      var t = trips.filter(function (x) { return x.tripCode === code; })[0] ||
+        trips.filter(function (x) { return c.dep && hhmm(x.fromTime) === c.dep && (!c.fare || [x.fareLarge, x.fare, x.originalFare].indexOf(c.fare) >= 0); })[0] || {};
       var d = got[code] || {};
       var shown = timesByCode[code] || {};
       // Derive the clock time of "duration 0" from any stop whose time is on screen, so the others get times too.
@@ -167,12 +212,13 @@
       });
       data.date = data.date || t.departure_date || "";
       data.trips.push({
-        op: t.busName || t.companyName || "",
-        veh: t.vehicleTypeStr || "",
-        dep: hhmm(t.fromTime) || "",
-        arr: hhmm(t.toTime || t.arrival_time) || "",
-        fare: t.fareLarge || t.originalFare || 0,
-        seats: t.numberSeatAvailable,
+        op: c.op || t.busName || t.companyName || "",
+        veh: c.veh || t.vehicleTypeStr || "",
+        dep: c.dep || hhmm(t.fromTime) || "",
+        arr: c.arr || hhmm(t.toTime || t.arrival_time) || "",
+        fare: c.fare || t.fareLarge || t.originalFare || 0,
+        seats: c.seats != null ? c.seats : t.numberSeatAvailable,
+        url: pinUrl(t, d, c.dep || hhmm(t.fromTime)),
         p: points(d.pickup_points, 0, shown, base).concat(points(d.transfer_points, 1, shown, base)),
         d: points(d.drop_off_points, 0, shown, base).concat(points(d.drop_off_transfer_points, 1, shown, base)),
       });
@@ -193,8 +239,10 @@
         url = SITE + "#z=" + b64(new Uint8Array(buf));
       } catch (e) {}
     }
+    var linked = data.trips.filter(function (x) { return x.url; }).length;
     var sec = function (ms) { return (ms / 1000 / buttons.length).toFixed(1); };
-    say("完成：讀到 " + data.trips.length + " / " + buttons.length + " 班的上下車點，共 " + Math.round((Date.now() - start) / 1000) + " 秒（每班平均：等分頁 " + sec(spent[0]) + "、等資料 " + sec(spent[1]) + "、等時間 " + sec(spent[2]) + " 秒）。");
+    say("完成：讀到 " + data.trips.length + " / " + buttons.length + " 班的上下車點，共 " + Math.round((Date.now() - start) / 1000) + " 秒（每班平均：等分頁 " + sec(spent[0]) + "、等資料 " + sec(spent[1]) + "、等時間 " + sec(spent[2]) + " 秒）。" +
+      (linked < data.trips.length ? " 有 " + (data.trips.length - linked) + " 班找不到直接連結（欄位：" + Object.keys(trips[0] || {}).slice(0, 40).join(",") + "）" : ""));
     btn.style.display = "block";
     btn.onclick = function () { window.open(url, "_blank"); };
     window.__vnbusRunning = false;

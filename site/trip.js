@@ -86,7 +86,7 @@
     $("tripMeta").textContent = [cur.date || data.date, cur.veh, cur.seats != null && `剩 ${cur.seats} 位`].filter(Boolean).join("｜");
     $("back").hidden = !backUrl(cur);
     $("back").href = backUrl(cur) || "#";
-    $("back").textContent = trips.length > 1 ? "回 Vexere 搜尋結果" : "回 Vexere 訂這班車";
+    $("back").textContent = trips.length > 1 && !cur.url ? "回 Vexere 搜尋結果" : "回 Vexere 訂這班車";
     document.title = `${cur.op} ${hhmm(cur.dep)}｜班次停靠點`;
   }
 
