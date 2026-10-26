@@ -43,6 +43,14 @@
   const picks = data.p.map(toPoint("pickup"));
   const drops = data.d.map(toPoint("dropoff"));
   const all = [...picks, ...drops];
+  // Transfer points are served by a shuttle; the first non-transfer point is where the bus itself
+  // departs (pickups) or arrives (drop-offs).
+  const main = (points) => points.find((p) => !p.transfer);
+  const depart = main(picks);
+  const arrive = main(drops);
+  const COLORS = { pickup: ["#1a9b5a", "#8fd19e"], dropoff: ["#d64545", "#f4a259"] };
+  const color = (p) => COLORS[p.kind][p.transfer ? 1 : 0];
+  const tag = (p) => (p === depart ? "發車點" : p === arrive ? "到站點" : p.transfer ? "接駁" : "");
   let me = null;
 
   // ---------- trip summary ----------
@@ -68,7 +76,7 @@
   const layers = map && L.layerGroup().addTo(map);
 
   const label = (p) =>
-    `${p.time ? `<b>${esc(p.time)}</b> ` : ""}${esc(p.name)}${p.surcharge ? ` <span class="approx">+${vnd(p.surcharge)}</span>` : ""}${p.transfer ? ' <span class="chip">接駁</span>' : ""}`;
+    `${p.time ? `<b>${esc(p.time)}</b> ` : ""}${esc(p.name)}${p.surcharge ? ` <span class="approx">+${vnd(p.surcharge)}</span>` : ""}${tag(p) ? ` <span class="chip${p.transfer ? "" : " main"}">${tag(p)}</span>` : ""}`;
 
   function drawMap(keepView) {
     if (!map) return;
@@ -77,10 +85,10 @@
     all.forEach((p) => {
       if (!p.lat) return;
       p.marker = L.circleMarker([p.lat, p.lon], {
-        radius: 8,
+        radius: p === depart || p === arrive ? 11 : p.transfer ? 7 : 8,
         color: "#fff",
         weight: 2,
-        fillColor: p.kind === "pickup" ? "#1a9b5a" : "#d64545",
+        fillColor: color(p),
         fillOpacity: 0.95,
       })
         .bindPopup(`${p.kind === "pickup" ? "上車點" : "下車點"}：${label(p)}<br><small>${esc(p.addr)}</small><br>${gmapsLink(p)}`)
