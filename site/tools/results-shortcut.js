@@ -102,26 +102,39 @@
   var tabsIn = function (card) { return Array.prototype.slice.call(card.querySelectorAll(".ant-tabs-tab")).filter(function (n) { return n.offsetParent; }); };
   // What the card shows: "Phương Trang ★4.9 (5302)", "Limousine sleeping bus", "17:20 • Bến xe Bình Minh",
   // "20:40 • Bến xe Ga", "220,000 VND", "33 seats left". Read with Details closed.
+  // "17:00 • Văn phòng Chợ Lá..." may come as one line or as "17:00", "•", "Văn phòng…" lines.
+  var timedLines = function (lines) {
+    var out = [];
+    lines.forEach(function (l, i) {
+      var m = /^(\d{1,2}:\d{2})\s*[•·]?\s*(.*)$/.exec(l);
+      if (!m || /\d{2}-\d{2}-\d{4}/.test(l)) return;
+      var name = m[2];
+      for (var j = i + 1; !name && j < lines.length && j <= i + 2; j++) if (!/^[•·]$/.test(lines[j]) && !/^\d/.test(lines[j])) name = lines[j];
+      out.push([hhmm(m[1]), (name || "").replace(/\s*(\.\.\.|…)$/, "")]);
+    });
+    return out;
+  };
   var cardInfo = function (card) {
     var lines = (card.innerText || "").split("\n").map(function (x) { return x.trim(); }).filter(Boolean);
     var stops = [], fare = 0, seats = null, words = [];
     lines.forEach(function (l) {
       var m;
-      if ((m = /^(\d{1,2}:\d{2})\s*[•·]\s*(.+)$/.exec(l))) stops.push([hhmm(m[1]), m[2]]);
-      else if (!fare && (m = /^([\d.,]+)\s*(VND|đ|₫)/i.exec(l))) fare = +m[1].replace(/[.,]/g, "");
+      if (/^(\d{1,2}:\d{2})/.test(l) || /^[•·]$/.test(l)) return;
+      if (!fare && (m = /^([\d.,]+)\s*(VND|đ|₫)/i.exec(l))) fare = +m[1].replace(/[.,]/g, "");
       else if ((m = /^(\d+)\s*(seats? left|chỗ trống)/i.exec(l))) seats = +m[1];
       else if (!/^\d|^★|details|book|call|^\*|belongs|thuộc|instant|free|shuttle|live|no prepayment|\d+h\d*m?$/i.test(l)) words.push(l.replace(/\s*★.*$/, ""));
     });
-    return { op: words[0] || "", veh: words[1] || "", dep: (stops[0] || [])[0] || "", arr: (stops[1] || [])[0] || "", fare: fare, seats: seats };
+    stops = timedLines(lines);
+    words = words.filter(function (w) { return !stops.some(function (st) { return st[1] && w.indexOf(st[1]) === 0; }); });
+    return { stops: stops, op: words[0] || "", veh: words[1] || "", dep: (stops[0] || [])[0] || "", arr: (stops[1] || [])[0] || "", fare: fare, seats: seats };
   };
 
   // The panel shows each stop as "16:40 • Tan Dien Roundabout"; read those times from what is on screen.
   var shownTimes = function (root) {
     var out = {};
     (root || document).querySelectorAll(".ant-tabs-tabpane-active").forEach(function (pane) {
-      (pane.innerText || "").split("\n").forEach(function (line) {
-        var m = /^\s*(\d{1,2}:\d{2})\s*[•·]\s*(.+?)\s*$/.exec(line);
-        if (m) out[m[2]] = hhmm(m[1]);
+      timedLines((pane.innerText || "").split("\n").map(function (x) { return x.trim(); }).filter(Boolean)).forEach(function (st) {
+        if (st[1]) out[st[1]] = st[0];
       });
     });
     return out;
@@ -201,7 +214,7 @@
       var t2 = Date.now();
       // Read only this trip's panel, so an earlier trip's panel can't answer for it.
       var root = (tab && tab.closest(".ant-tabs")) || card;
-      var times = await waitFor(function () { var t = shownTimes(root); return Object.keys(t).length ? t : null; }, 1500) || {};
+      var times = await waitFor(function () { var t = shownTimes(root); return Object.keys(t).length ? t : null; }, 800) || {};
       var t3 = Date.now();
       Object.keys(got).forEach(function (code) { if (before.indexOf(code) < 0) { timesByCode[code] = times; infoByCode[code] = info; } });
       b.click(); // close Details again
@@ -211,11 +224,18 @@
 
     // Match each received stop list to its trip by trip code.
     var data = { v: 2, url: location.href, date: "", trips: [] };
+    var used = [];
     Object.keys(got).forEach(function (code) {
       var c = infoByCode[code] || {};
-      // The page data has no stop-list code; match its trip by departure time and fare.
-      var t = trips.filter(function (x) { return x.tripCode === code; })[0] ||
-        trips.filter(function (x) { return c.dep && hhmm(x.fromTime) === c.dep && (!c.fare || [x.fareLarge, x.fare, x.originalFare].indexOf(c.fare) >= 0); })[0] || {};
+      // The page data has no stop-list code; match its trip by departure time, then fare and operator.
+      var same = trips.filter(function (x) { return c.dep && hhmm(x.fromTime) === c.dep && used.indexOf(x) < 0; });
+      var score = function (x) {
+        return ([x.fareLarge, x.fare, x.originalFare].indexOf(c.fare) >= 0 ? 2 : 0) +
+          (c.op && (x.busName || x.companyName || "").toLowerCase() === c.op.toLowerCase() ? 1 : 0);
+      };
+      same.sort(function (a, b) { return score(b) - score(a); });
+      var t = trips.filter(function (x) { return x.tripCode === code; })[0] || same[0] || {};
+      used.push(t);
       var d = got[code] || {};
       var shown = timesByCode[code] || {};
       // Derive the clock time of "duration 0" from any stop whose time is on screen, so the others get times too.
@@ -223,6 +243,13 @@
       (d.pickup_points || []).concat(d.drop_off_points || []).some(function (p) {
         var s = shown[p.english_name] || shown[p.name];
         if (s && p.duration != null) { var hm = s.split(":"); base = (+hm[0] * 60 + +hm[1] - p.duration + 1440) % 1440; return true; }
+      });
+      // Else use the card's departure/arrival stop (its name may be cut short).
+      if (base == null) (c.stops || []).some(function (st) {
+        var p = (d.pickup_points || []).concat(d.drop_off_points || []).filter(function (p) {
+          return st[1] && p.duration != null && [p.english_name, p.name].some(function (n) { return n && n.indexOf(st[1]) === 0; });
+        })[0];
+        if (p) { var hm = st[0].split(":"); base = (+hm[0] * 60 + +hm[1] - p.duration + 1440) % 1440; return true; }
       });
       data.date = data.date || t.departure_date || "";
       data.trips.push({
