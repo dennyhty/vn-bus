@@ -44,7 +44,14 @@
     // A "See more" page of trips: keep the trips (they carry the id the pinned_trips link needs).
     var walk = function (v) {
       if (Array.isArray(v)) {
-        if (v.length && v[0] && v[0].fromTime && v[0].id) v.forEach(function (x) { if (!trips.some(function (y) { return y.id === x.id; })) trips.push(x); });
+        // Vexere's route API: each trip has idIndex ("<id>_<YYYY-MM-DD>_<HH:MM>_<pickup>_<drop-off>", the
+        // pinned_trips value), route.departure_time and company.name.
+        if (v.length && v[0] && v[0].idIndex && v[0].route) v.forEach(function (x) {
+          if (trips.some(function (y) { return y.idIndex === x.idIndex; })) return;
+          var fare = 0;
+          JSON.stringify(x.available_seat_info || x.route || {}).replace(/"fare":\[?(\d+)/, function (_, f) { fare = +f; });
+          trips.push({ idIndex: x.idIndex, id: x.route.id, fromTime: x.route.departure_time, busName: (x.company || {}).name, fareLarge: fare });
+        });
         else v.forEach(walk);
       } else if (v && typeof v === "object") Object.keys(v).forEach(function (k) { walk(v[k]); });
     };
@@ -57,7 +64,7 @@
     if (window.__vnbusHook) return;
     window.__vnbusHook = true;
     var hand = function (url, text) {
-      if (!/pickup_dropoff_points/.test(url || "") && !/"fromTime"/.test(text || "")) return;
+      if (!/pickup_dropoff_points/.test(url || "") && !/"idIndex"/.test(text || "")) return;
       var el = document.createElement("script");
       el.type = "application/json";
       el.setAttribute("data-vnbus", url);
@@ -151,6 +158,11 @@
   // ?pinned_trips=<trip id>_<YYYY-MM-DD>_<HH:MM>_<pickup id>_<drop-off id>.
   var pinUrl = function (t, d, dep) {
     var id = t.id || t.tripId || t.trip_id;
+    var u = new URL(location.href);
+    u.searchParams.delete("pinned_trips");
+    u.hash = "";
+    var pin = function (v) { return u.href + (u.search ? "&" : "?") + "pinned_trips=" + v; };
+    if (t.idIndex) return pin(t.idIndex);
     // The page's ?date= is DD-MM-YYYY; the trip's departure_date is ISO ("2026-10-28T00:00:00+07:00").
     var dm = /(\d{2})-(\d{2})-(\d{4})/.exec(new URLSearchParams(location.search).get("date") || "");
     var iso = /(\d{4})-(\d{2})-(\d{2})/.exec(t.departure_date || "");
@@ -162,10 +174,7 @@
     };
     var pick = pid(d.pickup_points), drop = pid(d.drop_off_points, true);
     if (!id || !dm || !dep) return "";
-    var u = new URL(location.href);
-    u.searchParams.delete("pinned_trips");
-    u.hash = "";
-    return u.href + (u.search ? "&" : "?") + "pinned_trips=" + [id, dm[3] + "-" + dm[2] + "-" + dm[1], dep, pick || "", drop || ""].join("_");
+    return pin([id, dm[3] + "-" + dm[2] + "-" + dm[1], dep, pick || "", drop || ""].join("_"));
   };
 
   var points = function (list, transfer, times, base) {
